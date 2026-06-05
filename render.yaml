@@ -1,0 +1,27 @@
+# Render Blueprint — админка-CMS Dark Omens (статичный SPA на Vite).
+#
+# Деплой:
+#   1. Запушить этот каталог в GitHub-репозиторий.
+#   2. Render → New → Blueprint → выбрать репозиторий.
+#   3. Render прочитает render.yaml, соберёт dist/ и раздаст как статику + CDN.
+#
+# Почему static, а не node: аппа целиком клиентская (ни SSR, ни серверных
+# секретов) — ходит в relay прямо из браузера, admin-key вводится в шапке.
+# Тариф static на Render бесплатный, без cold-start.
+services:
+  - type: web
+    name: dark-omens-admin
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    # SPA-роутинг: любой путь (например /edit/<id> при hard-refresh) отдаёт
+    # index.html, дальше роутит react-router на клиенте.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # Дефолтный URL relay на этапе сборки. Не обязателен: его можно
+      # переопределить в шапке (поле «API base» → localStorage).
+      - key: VITE_API_BASE
+        sync: false

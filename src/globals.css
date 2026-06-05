@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Палитра живёт в tailwind.config.js (theme.extend.colors). Здесь — дефолты
+   элементов (base) и переиспользуемые виджет-классы (components) через @apply.
+   Разметка может пользоваться обычными утилитами Tailwind где удобно. */
+
+@layer base {
+  body { @apply m-0 bg-bg text-text font-sans text-sm; }
+  /* preflight «обнуляет» заголовки — возвращаем h2 читаемый вид */
+  h2 { @apply text-xl font-bold my-4; }
+  a { @apply text-gold no-underline; }
+  a:hover { @apply underline; }
+
+  input, select, textarea, button {
+    @apply text-text bg-panel2 border border-line rounded-md px-2.5 py-2;
+  }
+  input::placeholder, textarea::placeholder { @apply text-muted; }
+  textarea { @apply w-full min-h-[70px] resize-y font-mono; }
+  label { @apply block text-muted text-xs mt-3 mb-1; }
+  button { @apply cursor-pointer; }
+  button:hover { @apply border-gold; }
+  button:disabled { @apply opacity-50 cursor-default; }
+
+  table { @apply w-full border-collapse; }
+  th, td { @apply text-left px-2.5 py-2 border-b border-[#221d2e]; }
+  th { @apply text-muted font-semibold text-xs; }
+  code { @apply font-mono text-text bg-panel2 px-1 rounded-sm; }
+}
+
+@layer components {
+  .bar {
+    @apply flex items-center gap-3 flex-wrap px-5 py-3 bg-panel
+           border-b border-line sticky top-0 z-10;
+  }
+  .bar .title { @apply text-gold font-bold tracking-[.04em]; }
+  .bar .spacer { @apply flex-1; }
+  .container { @apply max-w-[980px] mx-auto px-5 py-6; }
+
+  .primary { @apply bg-[#243018] border-[#3d5022] text-[#e9d39a]; }
+  .danger { @apply text-danger; }
+
+  .badge { @apply inline-block px-2 py-px rounded-[10px] text-[11px] border border-line text-muted; }
+  .badge.published { @apply text-green border-[#2e5a3a]; }
+  .tag {
+    @apply inline-block px-[7px] py-px mr-[3px] mb-[3px] rounded
+           bg-[#221d2e] text-muted text-[11px];
+  }
+
+  .section {
+    @apply border border-line rounded-lg pt-2.5 px-4 pb-4 my-4 bg-white/[.015];
+  }
+  .section-title {
+    @apply text-gold text-xs font-bold tracking-[.06em] uppercase mt-0.5 mb-2 opacity-80;
+  }
+
+  .row { @apply flex gap-3 flex-wrap items-end; }
+  .row > * { @apply flex-[1_1_160px] min-w-[120px] max-w-[280px]; }
+  .row select, .row input, .row textarea { @apply w-full; }
+  .field { @apply mb-1; }
+
+  .prose-group { @apply my-1.5; }
+  .prose-group + .prose-group { @apply border-t border-[#221d2e] pt-1.5; }
+  .prose-group-title {
+    @apply text-gold text-xs font-semibold tracking-[.03em] mt-2.5 mb-0.5 opacity-85;
+  }
+
+  .tabs { @apply flex gap-1.5 mt-4 mb-2; }
+  .tabs button { @apply px-3.5 py-1.5; }
+  .tabs button.active { @apply bg-[#243018] border-gold text-[#e9d39a]; }
+
+  .msg { @apply px-3 py-2 rounded-md my-2; }
+  .msg.err { @apply bg-[#2a1410] border border-[#5a2a1a] text-[#e0a080]; }
+  .msg.ok { @apply bg-[#142a18] border border-[#2e5a3a] text-[#9ad8a8]; }
+
+  .hint { @apply text-muted text-xs; }
+
+  .dsl-ref { @apply mt-2; }
+  .dsl-ref summary { @apply cursor-pointer text-muted text-xs; }
+  .dsl-ref summary:hover { @apply text-gold; }
+  .dsl-ref-body { @apply mt-1.5 text-xs text-muted leading-[1.55]; }
+  .dsl-ref-body p { @apply my-1; }
+  .dsl-ref-body b { @apply text-text; }
+  .dsl-ref-body .mono { @apply font-mono text-text break-words; }
+}
