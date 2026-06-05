@@ -21,7 +21,8 @@ services:
         source: /*
         destination: /index.html
     envVars:
-      # Дефолтный URL relay на этапе сборки. Не обязателен: его можно
-      # переопределить в шапке (поле «API base» → localStorage).
+      # Дефолтный URL relay, зашивается в бандл на этапе сборки (build-time).
+      # Не секрет (публичный URL). В шапке его всё ещё можно переопределить
+      # (поле «API base» → localStorage). Поменяешь здесь → нужен redeploy.
       - key: VITE_API_BASE
-        sync: false
+        value: https://dark-omens-backend.onrender.com
