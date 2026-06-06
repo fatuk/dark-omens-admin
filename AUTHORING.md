@@ -93,10 +93,22 @@
   "onEnter": []
 }
 ```
-- `solveCondition.kind`: `tokensOnCard` · `cluesOnCard` · `monsterDefeated`. `n` у `cluesOnCard`
-  масштабируется по числу игроков (движок перетирает).
-- `progressHook.trigger`: `researchEncounterResolved` · `gateClosed` · `encounterAtMysteryToken` ·
-  `encounterAtEldritchToken` · `monsterDefeated` · `gainingArtifact`.
+- `solveCondition.kind`: `cluesOnCard` · `tokensOnCard` · `monsterDefeated`.
+  - **cluesOnCard** — `n` (число помеченных локаций) движок сам масштабирует по числу
+    игроков (per-акт формула); `perPlayer` не задаём.
+  - **tokensOnCard** — **всегда задавай `perPlayer`** (множитель по числу игроков):
+    `0.5` = половина (вверх), `1` = по числу игроков, `2` = вдвое. `n` — только для
+    фиксированного числа без масштаба. Пример: `{ "kind": "tokensOnCard", "perPlayer": 0.5 }`.
+  - В `onEnter` задавай тот же `perPlayer` на узле раскладки — он развернётся в `count`
+    по числу игроков: `{ "do": "placeEldritchToken", "perPlayer": 0.5 }`. (Литеральный
+    `count` — только для фикс. числа.) Обычно множитель совпадает с целью Тайны.
+- **Набор жетонов (`tokensOnCard`)** — задаётся через `progress` (массив хуков):
+  `{ on, when?, test?, cost?, effect }`. Это data-driven: один и тот же финал, разные
+  способы набора (встреча на жетоне/метке, закрытие врат по Омену и т.д.). Полностью —
+  **`dark-omens-relay/MYSTERY-PROGRESS.md`**.
+- `progressHook` (один объект) — легаси-форма; новый формат — `progress: [ … ]`.
+  Триггеры: `encounterAtEldritchToken` · `encounterAtMysteryToken` · `gateClosed` ·
+  `monsterDefeated` · `researchEncounterResolved`.
 
 ### mythos
 ```json
