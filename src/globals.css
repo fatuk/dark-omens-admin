@@ -22,6 +22,7 @@
   button { @apply cursor-pointer; }
   button:hover { @apply border-gold; }
   button:disabled { @apply opacity-50 cursor-default; }
+  input:disabled, select:disabled, textarea:disabled { @apply opacity-60 cursor-default; }
 
   table { @apply w-full border-collapse; }
   th, td { @apply text-left px-2.5 py-2 border-b border-[#221d2e]; }
@@ -83,4 +84,61 @@
   .dsl-ref-body p { @apply my-1; }
   .dsl-ref-body b { @apply text-text; }
   .dsl-ref-body .mono { @apply font-mono text-text break-words; }
+
+  /* Визуальный конструктор встречи (React Flow) */
+  .rf-wrap { @apply flex-1 min-h-[360px] w-full rounded-lg border border-line overflow-hidden bg-bg my-2; }
+  /* Правая панель «Механика» — колонка на всю высоту окна (sticky в раскладке) */
+  .mech-panel { @apply flex flex-col overflow-hidden my-0 lg:h-full; }
+  .mech-body { @apply flex flex-col flex-1 min-h-0; }
+  .mech-json { @apply flex-1 min-h-0 w-full resize-none; }
+  .rf-node { @apply bg-panel2 border border-line rounded-md px-2.5 py-2 text-xs min-w-[160px]; }
+  .rf-ok { @apply border-[#2e5a3a]; }
+  .rf-fail { @apply border-[#5a2a1a]; }
+  .rf-node-title { @apply text-gold text-[11px] font-bold mb-1.5; }
+  .rf-node select, .rf-node input { @apply text-[11px] px-1.5 py-1 rounded; }
+  .rf-node button { @apply text-[11px] px-1.5 py-1; }
+  .rf-note { @apply text-muted text-xs px-3 py-2 my-2 rounded-md border border-line bg-white/[.015]; }
+
+  /* Селект с поиском (combobox); выпадашка — в портале (position: fixed) */
+  .cbx { @apply relative; }
+  .cbx-input { @apply w-full; }
+  .cbx-menu {
+    @apply fixed z-[9999] max-h-60 overflow-auto bg-panel2 border border-line
+           rounded-md py-1 text-xs shadow-[0_8px_24px_rgba(0,0,0,.5)];
+  }
+  .cbx-opt { @apply px-2.5 py-1 cursor-pointer text-text whitespace-nowrap; }
+  .cbx-opt.hi { @apply bg-[#243018]; }
+  .cbx-opt.sel { @apply text-gold; }
+  .cbx-empty { @apply px-2.5 py-1 text-muted; }
+
+  /* Числовой степпер (−/значение/+), без нативного спиннера */
+  .numf { @apply inline-flex items-center gap-1; }
+  .numf input::-webkit-outer-spin-button,
+  .numf input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .numf input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
+
+  /* React Flow Controls/подпись под тёмную тему (по умолчанию белые — не читаются).
+     Префикс .rf-wrap — чтобы перебить базовый CSS React Flow по специфичности. */
+  .rf-wrap .react-flow__controls { box-shadow: none; }
+  .rf-wrap .react-flow__controls-button {
+    @apply bg-panel2 text-text;
+    border-bottom: 1px solid #3a2f1a;
+  }
+  .rf-wrap .react-flow__controls-button:hover { @apply bg-[#243018]; }
+  .rf-wrap .react-flow__controls-button svg { fill: currentColor; }
+  .rf-wrap .react-flow__attribution { background: transparent; }
+  .rf-wrap .react-flow__attribution a { @apply text-muted; }
+
+  /* Тосты (правый верх, поверх всего) */
+  .toasts { @apply fixed top-4 right-4 z-[10000] flex flex-col gap-2 max-w-[min(92vw,420px)]; }
+  .toast {
+    @apply px-4 py-3 rounded-md text-sm cursor-pointer border shadow-[0_8px_24px_rgba(0,0,0,.5)];
+  }
+  .toast.err { @apply bg-[#2a1410] border-[#5a2a1a] text-[#e0a080]; }
+  .toast.ok { @apply bg-[#142a18] border-[#2e5a3a] text-[#9ad8a8]; }
+
+  /* Конструкторы-формы (Тайна/Мифы/Древний) — заполняют панель механики и скроллятся */
+  .dsl-form { @apply flex-1 min-h-0 overflow-auto pr-1; }
+  .hook-card { @apply border border-line rounded-md p-2.5 my-2 bg-white/[.02]; }
+  .ancient-deck th, .ancient-deck td { @apply text-center px-2; }
 }

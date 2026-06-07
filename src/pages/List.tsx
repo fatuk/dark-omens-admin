@@ -4,7 +4,7 @@ import { useContentList, useMeta, type ListFilters } from '@/hooks';
 import { CONTENT_TYPES, ENCOUNTER_KINDS, kindsFor } from '@/lib/types';
 
 export function ListPage() {
-  const [filters, setFilters] = useState<ListFilters>({ type: 'encounter' });
+  const [filters, setFilters] = useState<ListFilters>({});
   const set = (patch: Partial<ListFilters>) => setFilters((f) => ({ ...f, ...patch }));
 
   const { data: meta } = useMeta();
@@ -15,7 +15,7 @@ export function ListPage() {
   const kind = filters.kind ?? '';
 
   return (
-    <div>
+    <div className="mx-auto max-w-[980px]">
       <h2>Контент {isFetching ? '…' : `(${items.length})`}</h2>
       <div className="row">
         <div>

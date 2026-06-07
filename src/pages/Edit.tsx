@@ -12,6 +12,11 @@ import {
 } from '@/lib/prose';
 import { splitTags, joinTags, matchAxes, type MatchTags } from '@/lib/match';
 import { AutoTextarea } from '@/components/auto-textarea';
+import { EncounterFlow } from '@/components/dsl/encounter-flow';
+import { MysteryFlow } from '@/components/dsl/mystery-flow';
+import { MythosForm } from '@/components/dsl/mythos-form';
+import { AncientForm } from '@/components/dsl/ancient-form';
+import { useToast } from '@/components/toast';
 
 const EMPTY: ContentRecord = {
   id: '', type: 'encounter', kind: 'general', status: 'draft', tags: [],
@@ -27,11 +32,11 @@ export function EditPage() {
 
   const [rec, setRec] = useState<ContentRecord>(EMPTY);
   const [dataText, setDataText] = useState(JSON.stringify(EMPTY.data, null, 2));
+  const [mechView, setMechView] = useState<'nodes' | 'json'>('nodes');   // вид секции «Механика»
   const [locale, setLocale] = useState<Locale>('en');
   const [brief, setBrief] = useState('');   // подсказка для рыбы (эфемерная, не в записи)
   const [freeText, setFreeText] = useState('');   // сырой буфер ввода тематических тегов
-  const [err, setErr] = useState('');
-  const [ok, setOk] = useState('');
+  const toast = useToast();
 
   const { data: meta } = useMeta();
   const query = useContent(id, !isNew);
@@ -67,8 +72,8 @@ export function EditPage() {
   }, [isNew, id, query.data]);
 
   useEffect(() => {
-    if (query.error) setErr((query.error as Error).message);
-  }, [query.error]);
+    if (query.error) toast.error((query.error as Error).message);
+  }, [query.error, toast]);
 
   const prose = (path: string) => getAt(rec.i18n[locale] ?? {}, path);
   function setProse(path: string, val: string) {
@@ -115,10 +120,9 @@ export function EditPage() {
   }
 
   async function save() {
-    setErr(''); setOk('');
     let data: Record<string, unknown>;
     try { data = JSON.parse(dataText) as Record<string, unknown>; }
-    catch { setErr('Поле «механика (data)» — невалидный JSON'); return; }
+    catch { toast.error('Поле «механика (data)» — невалидный JSON'); return; }
     try {
       const saved = await saveMut.mutateAsync({ id, isNew, rec: { ...rec, data } });
       if (isNew) {
@@ -127,12 +131,11 @@ export function EditPage() {
         setDataText(JSON.stringify(saved.data ?? {}, null, 2));
         navigate(`/edit/${encodeURIComponent(saved.id)}`, { replace: true });
       }
-      setOk('Сохранено'); setTimeout(() => setOk(''), 1500);
-    } catch (e) { setErr((e as Error).message); }
+      toast.success('Сохранено');
+    } catch (e) { toast.error((e as Error).message); }
   }
 
   async function genDraft() {
-    setErr('');
     // Текущая механика → контекст для LLM, чтобы проза билась с проверками/эффектами.
     let mechanics: Record<string, unknown> | undefined;
     try { mechanics = JSON.parse(dataText) as Record<string, unknown>; } catch { mechanics = undefined; }
@@ -143,44 +146,41 @@ export function EditPage() {
         brief: brief.trim() || undefined,
       });
       setRec((r) => ({ ...r, i18n: { ...r.i18n, [locale]: setMany(r.i18n[locale] ?? {}, fields) } }));
-    } catch (e) { setErr((e as Error).message); }
+    } catch (e) { toast.error((e as Error).message); }
   }
 
   async function translate() {
-    setErr('');
     const from = locale;
     const to: Locale = locale === 'en' ? 'ru' : 'en';
     const srcFlat = flatten(rec.i18n[from] ?? {});
     if (Object.keys(srcFlat).length === 0) {
-      setErr(`Нечего переводить: локаль ${from.toUpperCase()} пуста — заполни её сначала`);
+      toast.error(`Нечего переводить: локаль ${from.toUpperCase()} пуста — заполни её сначала`);
       return;
     }
     try {
       const { fields } = await translateMut.mutateAsync({ fields: srcFlat, from, to });
       setRec((r) => ({ ...r, i18n: { ...r.i18n, [to]: setMany(r.i18n[to] ?? {}, fields) } }));
       setLocale(to);
-    } catch (e) { setErr((e as Error).message); }
+    } catch (e) { toast.error((e as Error).message); }
   }
 
   async function del() {
     if (!window.confirm('Удалить запись безвозвратно?')) return;
     try { await delMut.mutateAsync(id); navigate('/'); }
-    catch (e) { setErr((e as Error).message); }
+    catch (e) { toast.error((e as Error).message); }
   }
 
   return (
-    <div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+    <div className="min-w-0">
       <h2>{isNew ? 'Новая запись' : `Правка: ${getAt(rec.i18n.en, 'name') || id}`}</h2>
-
-      {err && <div className="msg err">{err}</div>}
-      {ok && <div className="msg ok">{ok}</div>}
 
       <section className="section">
       <div className="section-title">Классификация</div>
       <div className="row">
         <div>
           <label>Тип</label>
-          <select value={rec.type} onChange={(e) => changeType(e.target.value)}>
+          <select value={rec.type} onChange={(e) => changeType(e.target.value)} disabled={!isNew}>
             {(CONTENT_TYPES as readonly string[]).includes(rec.type)
               ? null
               : <option value={rec.type}>{rec.type} (?)</option>}
@@ -189,7 +189,7 @@ export function EditPage() {
         </div>
         <div>
           <label>Вид</label>
-          <select value={rec.kind} onChange={(e) => applyTypeKind(rec.type, e.target.value)}>
+          <select value={rec.kind} onChange={(e) => applyTypeKind(rec.type, e.target.value)} disabled={!isNew}>
             {kindOptions.length === 0
               ? <option value="">—</option>
               : kindOptions.map((k) => <option key={k} value={k}>{k}</option>)}
@@ -319,51 +319,90 @@ export function EditPage() {
       ))}
       </section>
 
-      <section className="section">
-      <div className="section-title">Механика</div>
-      <div className="flex items-end gap-2.5">
-        <label className="flex-1">Механика (data) — JSON под выбранный тип/вид</label>
-        <button type="button" onClick={resetTemplate} title="Заменить механику стартовым шаблоном">
-          ↻ Шаблон
-        </button>
-      </div>
-      <p className="hint mt-0.5 mb-1.5">
-        Шаблон уже с примерами — замени значения. Эффекты в <code>onSuccess</code>/<code>onFailure</code> —
-        массив узлов DSL. Навыки: {(meta?.dsl?.skills ?? ['lore', 'influence', 'observation', 'strength', 'will']).join(', ')}.
-      </p>
-      <AutoTextarea
-        value={dataText}
-        onChange={(e) => setDataText(e.target.value)}
-        className="min-h-[160px]"
-      />
-      {meta?.dsl && (
-        <details className="dsl-ref">
-          <summary>Справка по DSL — допустимые значения полей</summary>
-          <div className="dsl-ref-body">
-            <p><b>Узел-действие:</b> <span className="mono">{'{ "do": <verb>, "target"?, "amount"?|"count"?, "when"?, "repeat"? }'}</span></p>
-            <p><b>Вложенная проверка:</b> <span className="mono">{'{ "test": <skill>, "modifier"?, "onPass": [...], "onFail": [...] }'}</span></p>
-            <p><b>Выбор / бросок:</b> <span className="mono">{'{ "choice": [<eff>, <eff>] }'}</span> · <span className="mono">{'{ "dieRoll": [{ "on": "6", "then": [...] }] }'}</span></p>
-            <p><b>skill:</b> <span className="mono">{meta.dsl.skills.join(', ')}</span></p>
-            <p><b>do (verb):</b> <span className="mono">{meta.dsl.actionVerbs.join(', ')}</span></p>
-            <p><b>target:</b> <span className="mono">{meta.dsl.targets.join(', ')}</span></p>
-            <p><b>condition:</b> <span className="mono">{meta.dsl.conditions.join(', ')}</span></p>
-            {rec.type === 'mystery' && (
-              <>
-                <p><b>solveCondition.kind:</b> <span className="mono">{(meta.dsl.mysterySolveKinds ?? []).join(', ')}</span></p>
-                <p><b>progressHook.trigger:</b> <span className="mono">{(meta.dsl.mysteryTriggers ?? []).join(', ')}</span></p>
-              </>
-            )}
-          </div>
-        </details>
-      )}
-      </section>
-
       <div className="flex gap-2.5 mt-[18px]">
         <button className="primary" onClick={() => void save()} disabled={busy}>
           {busy ? '…' : 'Сохранить'}
         </button>
         {!isNew && <button className="danger" onClick={() => void del()}>Удалить</button>}
       </div>
+      </div>
+
+      <aside className="lg:sticky lg:top-[68px] lg:h-[calc(100vh-96px)] min-w-0">
+      <section className="section mech-panel">
+      <div className="section-title">Механика</div>
+      {(() => {
+        const canBuild = ['encounter', 'mystery', 'mythos', 'ancient'].includes(rec.type);
+        const view = canBuild ? mechView : 'json';
+        return (
+          <>
+            <div className="tabs">
+              {canBuild && (
+                <button
+                  type="button"
+                  className={view === 'nodes' ? 'active' : ''}
+                  onClick={() => setMechView('nodes')}
+                >
+                  Конструктор
+                </button>
+              )}
+              <button
+                type="button"
+                className={view === 'json' ? 'active' : ''}
+                onClick={() => setMechView('json')}
+              >
+                JSON
+              </button>
+              <span className="flex-1" />
+              <button type="button" onClick={resetTemplate} title="Заменить механику стартовым шаблоном">
+                ↻ Шаблон
+              </button>
+            </div>
+
+            <div className="mech-body">
+            {view === 'nodes' ? (
+              rec.type === 'encounter'
+                ? <EncounterFlow value={dataText} onChange={setDataText} meta={meta ?? undefined} />
+                : rec.type === 'mystery'
+                  ? <MysteryFlow value={dataText} onChange={setDataText} meta={meta ?? undefined} />
+                  : rec.type === 'mythos'
+                    ? <MythosForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
+                    : <AncientForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
+            ) : (
+              <>
+                <textarea
+                  className="mech-json"
+                  value={dataText}
+                  onChange={(e) => setDataText(e.target.value)}
+                  spellCheck={false}
+                />
+                {meta?.dsl && (
+                  <details className="dsl-ref">
+                    <summary>Справка по DSL — допустимые значения полей</summary>
+                    <div className="dsl-ref-body">
+                      <p><b>Узел-действие:</b> <span className="mono">{'{ "do": <verb>, "target"?, "amount"?|"count"?, "when"?, "repeat"? }'}</span></p>
+                      <p><b>Вложенная проверка:</b> <span className="mono">{'{ "test": <skill>, "modifier"?, "onPass": [...], "onFail": [...] }'}</span></p>
+                      <p><b>Выбор / бросок:</b> <span className="mono">{'{ "choice": [<eff>, <eff>] }'}</span> · <span className="mono">{'{ "dieRoll": [{ "on": "6", "then": [...] }] }'}</span></p>
+                      <p><b>skill:</b> <span className="mono">{meta.dsl.skills.join(', ')}</span></p>
+                      <p><b>do (verb):</b> <span className="mono">{meta.dsl.actionVerbs.join(', ')}</span></p>
+                      <p><b>target:</b> <span className="mono">{meta.dsl.targets.join(', ')}</span></p>
+                      <p><b>condition:</b> <span className="mono">{meta.dsl.conditions.join(', ')}</span></p>
+                      {rec.type === 'mystery' && (
+                        <>
+                          <p><b>solveCondition.kind:</b> <span className="mono">{(meta.dsl.mysterySolveKinds ?? []).join(', ')}</span></p>
+                          <p><b>progressHook.trigger:</b> <span className="mono">{(meta.dsl.mysteryTriggers ?? []).join(', ')}</span></p>
+                        </>
+                      )}
+                    </div>
+                  </details>
+                )}
+              </>
+            )}
+            </div>
+          </>
+        );
+      })()}
+      </section>
+      </aside>
     </div>
   );
 }

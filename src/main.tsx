@@ -7,6 +7,7 @@ import './globals.css';
 import { Layout } from './App';
 import { ListPage } from './pages/List';
 import { EditPage } from './pages/Edit';
+import { ToastProvider } from './components/toast';
 
 // SPA-роутинг. /edit/new — создание, /edit/:id — правка (id может быть 'new').
 const router = createBrowserRouter([
@@ -29,7 +30,9 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <ToastProvider>
+        <RouterProvider router={router} />
+      </ToastProvider>
     </QueryClientProvider>
   </StrictMode>,
 );
