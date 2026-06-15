@@ -12,6 +12,24 @@ const NO_COUNT = new Set([
   'closeGate', 'discardGate', 'monsterSurge', 'mysteryProgress', 'resolveReckoning',
 ]);
 
+// Verb'ы поля/доски/монстров/карты-носителя — движок применяет НЕ к сыщику, target
+// им не нужен (TargetResolver роутит только player-verb'ы). Прячем выпадашку цели.
+const NO_TARGET = new Set([
+  'advanceDoom', 'advanceOmen', 'moveOmen', 'retreatDoom',
+  'openGate', 'closeGate', 'discardGate', 'spawnMonster', 'monsterSurge',
+  'discardMonster', 'defeatMonster', 'damageMonster',
+  'placeClue', 'placeEldritchToken', 'placeRumor', 'resolveReckoning',
+  'drawMythos', 'drawCard', 'flipCard', 'discardCard',
+  'lookAtGates', 'reorderGates', 'mysteryProgress',
+]);
+
+// Цели, которые движок реально применяет к СЫЩИКАМ (TargetResolver). Прочие из
+// meta.dsl.targets (eachMonster/eachGate/eachMythos…) к player-verb'ам не относятся.
+const PLAYER_TARGETS = new Set([
+  'lead', 'self', 'each', 'eachOnCity', 'eachOnWilderness', 'eachOnSea', 'eachOnSpace',
+  'eachWith', 'chosen', 'chosenInvestigator', 'rightNeighbor', 'leftNeighbor',
+]);
+
 // forEach итерирует сыщиков — осмысленны только цели-семейства each.
 const FOREACH_TARGETS = ['each', 'eachOnCity', 'eachOnWilderness', 'eachOnSea', 'eachOnSpace'];
 
@@ -122,11 +140,11 @@ export function EffectList({ value, onChange, verbs, locations, targets }: Props
             {showCount && (
               <NumField value={Number(e['amount'] ?? e['count'] ?? 1)} onChange={(n) => setNum(i, n)} min={1} />
             )}
-            {targets && (
+            {targets && !NO_TARGET.has(String(e['do'])) && (
               <select value={String(e['target'] ?? '')}
                 onChange={(ev) => patch(i, { target: ev.target.value || undefined })} title="Цель эффекта">
                 <option value="">сам / активный</option>
-                {targets.map((t) => <option key={t} value={t}>{t}</option>)}
+                {targets.filter((t) => PLAYER_TARGETS.has(t)).map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             )}
             {e['do'] === 'placeEldritchToken' && locations && (
