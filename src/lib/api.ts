@@ -42,6 +42,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 
 export interface Meta {
   ancients: { id: string; name: string; epithet: string }[];
+  locations: { id: string; name: string; nameEn: string; type: string }[];
   locationTypes: string[];
   otherWorlds: string[];
   encounterKinds: string[];

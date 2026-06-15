@@ -221,7 +221,7 @@ export function EditPage() {
 
       <section className="section">
       <div className="section-title">Контекст выборки из корпуса</div>
-      {(axes.ancient || axes.loc || axes.world || axes.act) && (
+      {(axes.ancient || axes.loc || axes.location || axes.world || axes.act) && (
         <div className="row">
           {axes.ancient && (
             <div>
@@ -240,6 +240,17 @@ export function EditPage() {
               <select value={m.loc} onChange={(e) => setMatch({ loc: e.target.value })}>
                 <option value="">— любая —</option>
                 {meta?.locationTypes.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+          )}
+          {axes.location && (
+            <div>
+              <label>Локация (привязка)</label>
+              <select value={m.location} onChange={(e) => setMatch({ location: e.target.value })}>
+                <option value="">— любая (по типу) —</option>
+                {meta?.locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                {m.location && !meta?.locations.some((l) => l.id === m.location) &&
+                  <option value={m.location}>{m.location} (?)</option>}
               </select>
             </div>
           )}
