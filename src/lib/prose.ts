@@ -66,6 +66,17 @@ const MYSTERY_PROSE: ProseGroup[] = [{
   ],
 }];
 
+// Карта Мифов: name + атмосфера + что происходит. Проверки и исхода НЕТ — карта
+// применяется безусловно (onDraw), поэтому без success/failure. relay читает
+// flavorText/text (mainText — легаси-фоллбэк), см. mapMythosRecord в campaign-corpus.
+const MYTHOS_PROSE: ProseGroup[] = [{
+  fields: [
+    { path: 'name',       label: 'Название',            multiline: false },
+    { path: 'flavorText', label: 'Завязка (атмосфера)', multiline: true },
+    { path: 'text',       label: 'Что происходит',      multiline: true },
+  ],
+}];
+
 // Древний: идентичность (как в config/ancients.json — name/epithet/description/awakening).
 const ANCIENT_PROSE: ProseGroup[] = [{
   fields: [
@@ -84,6 +95,7 @@ export function proseSchema(type: string, kind: string): ProseGroup[] {
     return FLAT;
   }
   if (type === 'mystery') return MYSTERY_PROSE;
+  if (type === 'mythos')  return MYTHOS_PROSE;
   if (type === 'ancient') return ANCIENT_PROSE;
   // прочие типы — пока плоская тройка name/main/… (контракт уточним позже)
   return FLAT;
