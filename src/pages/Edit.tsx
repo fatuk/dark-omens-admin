@@ -17,6 +17,7 @@ import { MysteryFlow } from '@/components/dsl/mystery-flow';
 import { MythosForm } from '@/components/dsl/mythos-form';
 import { AncientForm } from '@/components/dsl/ancient-form';
 import { useToast } from '@/components/toast';
+import { EncounterAnalysis } from '@/components/EncounterAnalysis';
 
 const EMPTY: ContentRecord = {
   id: '', type: 'encounter', kind: 'general', status: 'draft', tags: [],
@@ -36,6 +37,7 @@ export function EditPage() {
   const [locale, setLocale] = useState<Locale>('en');
   const [brief, setBrief] = useState('');   // подсказка для рыбы (эфемерная, не в записи)
   const [freeText, setFreeText] = useState('');   // сырой буфер ввода тематических тегов
+  const [showAnalysis, setShowAnalysis] = useState(false);   // модалка расчёта вероятностей
   const toast = useToast();
 
   const { data: meta } = useMeta();
@@ -174,6 +176,14 @@ export function EditPage() {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
     <div className="min-w-0">
       <h2>{isNew ? 'Новая запись' : `Правка: ${getAt(rec.i18n.en, 'name') || id}`}</h2>
+      {rec.type === 'encounter' && (
+        <button type="button" onClick={() => setShowAnalysis(true)} style={{ marginBottom: 12 }}>
+          📊 Анализ встречи
+        </button>
+      )}
+      {showAnalysis && (
+        <EncounterAnalysis rec={rec} meta={meta} onClose={() => setShowAnalysis(false)} />
+      )}
 
       <section className="section">
       <div className="section-title">Классификация</div>
