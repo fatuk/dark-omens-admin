@@ -6,7 +6,10 @@ import { NumField } from '@/components/num-field';
 type Eff = Record<string, unknown>;
 
 export function EffectList(
-  { value, onChange, verbs }: { value: Eff[]; onChange: (e: Eff[]) => void; verbs: string[] },
+  { value, onChange, verbs, locations }: {
+    value: Eff[]; onChange: (e: Eff[]) => void; verbs: string[];
+    locations?: { id: string; name: string }[];
+  },
 ): JSX.Element {
   const effs = value ?? [];
   const setRow = (i: number, patch: Eff): void =>
@@ -27,6 +30,20 @@ export function EffectList(
             placeholder="verb…"
           />
           <NumField value={Number(e['amount'] ?? e['count'] ?? 1)} onChange={(n) => setNum(i, n)} min={1} />
+          {e['do'] === 'placeEldritchToken' && locations && (
+            <select
+              value={String(e['where'] ?? '')}
+              onChange={(ev) => setRow(i, { where: ev.target.value })}
+              title="Куда положить жетон Знамения"
+            >
+              <option value="">случайно</option>
+              <option value="self">на карту Тайны</option>
+              <option value="marked">на помеченные локации</option>
+              <optgroup label="конкретная локация">
+                {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </optgroup>
+            </select>
+          )}
           <button type="button" onClick={() => onChange(effs.filter((_, j) => j !== i))} title="удалить">×</button>
         </div>
       ))}
