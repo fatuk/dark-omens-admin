@@ -1,11 +1,31 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useContentList, useMeta, type ListFilters } from '@/hooks';
 import { CONTENT_TYPES, ENCOUNTER_KINDS, kindsFor } from '@/lib/types';
 
+// Фильтры списка переживают перезагрузку/навигацию (localStorage, как API base/key).
+const LS_FILTERS = 'doa_content_filters';
+
+function loadFilters(): ListFilters {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(LS_FILTERS);
+    const v: unknown = raw ? JSON.parse(raw) : {};
+    return v && typeof v === 'object' && !Array.isArray(v) ? (v as ListFilters) : {};
+  } catch {
+    return {};
+  }
+}
+
 export function ListPage() {
-  const [filters, setFilters] = useState<ListFilters>({});
+  const [filters, setFilters] = useState<ListFilters>(loadFilters);
   const set = (patch: Partial<ListFilters>) => setFilters((f) => ({ ...f, ...patch }));
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_FILTERS, JSON.stringify(filters));
+    } catch { /* localStorage недоступен — не критично */ }
+  }, [filters]);
 
   const { data: meta } = useMeta();
   const { data, isFetching, error, refetch } = useContentList(filters);
