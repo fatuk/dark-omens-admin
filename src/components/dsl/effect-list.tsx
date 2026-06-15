@@ -1,6 +1,6 @@
 // Рекурсивный редактор DSL-эффектов: запись массива — лист-Action (verb + число +
-// цель + verb-специфичные селекты) ЛИБО структурный узел choice/group/forEach с
-// вложенными списками. Используется в конструкторах (mystery/mythos-формы).
+// цель + verb-специфичные селекты) ЛИБО структурный узел choice/group/forEach/dieRoll/
+// test с вложенными списками. Используется в конструкторах (mystery/mythos-формы).
 import { Combobox } from '@/components/combobox';
 import { NumField } from '@/components/num-field';
 
@@ -32,6 +32,9 @@ const PLAYER_TARGETS = new Set([
 
 // forEach итерирует сыщиков — осмысленны только цели-семейства each.
 const FOREACH_TARGETS = ['each', 'eachOnCity', 'eachOnWilderness', 'eachOnSea', 'eachOnSpace'];
+
+// Навыки для узла test (вложенная проверка).
+const SKILLS = ['lore', 'influence', 'observation', 'strength', 'will'];
 
 type Props = {
   value: Eff[];
@@ -124,6 +127,58 @@ export function EffectList({ value, onChange, verbs, locations, targets }: Props
             </div>
           );
         }
+        // ── dieRoll ───────────────────────────────────────────────────────────
+        if ('dieRoll' in e) {
+          const rolls = (e['dieRoll'] as Eff[]) ?? [];
+          const setRolls = (r: Eff[]): void => patch(i, { dieRoll: r });
+          return (
+            <div key={i} className={STRUCT}>
+              <div className={HEAD}>
+                <span className="flex-1">Бросок кубика (dieRoll)</span>
+                <button type="button" onClick={() => remove(i)} title="удалить">×</button>
+              </div>
+              {rolls.map((r, k) => (
+                <div key={k} className="rounded border border-white/5 p-1.5 flex flex-col gap-1">
+                  <div className="flex items-center gap-2 text-xs opacity-60">
+                    <span>грань</span>
+                    <input className="w-16" value={String(r['on'] ?? '')} placeholder="1-2"
+                      onChange={(ev) => setRolls(rolls.map((x, y) => (y === k ? { ...x, on: ev.target.value } : x)))} />
+                    <span className="flex-1" />
+                    <button type="button" title="удалить грань"
+                      onClick={() => setRolls(rolls.filter((_, x) => x !== k))}>×</button>
+                  </div>
+                  <EffectList value={(r['then'] as Eff[]) ?? []}
+                    onChange={(list) => setRolls(rolls.map((x, y) => (y === k ? { ...x, then: list } : x)))}
+                    verbs={verbs} locations={locations} targets={targets} />
+                </div>
+              ))}
+              <button type="button" onClick={() => setRolls([...rolls, { on: '6', then: [newLeaf()] }])}>+ грань</button>
+            </div>
+          );
+        }
+        // ── test (вложенная проверка) ───────────────────────────────────────────
+        if ('test' in e) {
+          return (
+            <div key={i} className={STRUCT}>
+              <div className={HEAD}>
+                <span className="flex-1">Проверка (test)</span>
+                <select value={String(e['test'] ?? 'will')}
+                  onChange={(ev) => patch(i, { test: ev.target.value })} title="навык">
+                  {SKILLS.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <input type="number" className="w-14" value={Number(e['modifier'] ?? 0)} title="модификатор"
+                  onChange={(ev) => patch(i, { modifier: parseInt(ev.target.value, 10) || 0 })} />
+                <button type="button" onClick={() => remove(i)} title="удалить">×</button>
+              </div>
+              <div className="text-xs opacity-60">Успех (onPass)</div>
+              <EffectList value={(e['onPass'] as Eff[]) ?? []} onChange={(list) => patch(i, { onPass: list })}
+                verbs={verbs} locations={locations} targets={targets} />
+              <div className="text-xs opacity-60">Провал (onFail)</div>
+              <EffectList value={(e['onFail'] as Eff[]) ?? []} onChange={(list) => patch(i, { onFail: list })}
+                verbs={verbs} locations={locations} targets={targets} />
+            </div>
+          );
+        }
         // ── лист-Action ───────────────────────────────────────────────────────
         const showCount = !NO_COUNT.has(String(e['do'])) && !(e['do'] === 'placeClue' && e['scale'] === 'balance');
         return (
@@ -135,6 +190,13 @@ export function EffectList({ value, onChange, verbs, locations, targets }: Props
                 onChange={(ev) => patch(i, { scale: ev.target.value || undefined })} title="Сколько улик класть">
                 <option value="">точное число</option>
                 <option value="balance">по карте баланса (игроки)</option>
+              </select>
+            )}
+            {e['do'] === 'resolveReckoning' && (
+              <select value={String(e['scope'] ?? '')}
+                onChange={(ev) => patch(i, { scope: ev.target.value || undefined })} title="Объём Расплаты">
+                <option value="">полный шаг</option>
+                <option value="mythosInPlay">только карты Мифов в игре</option>
               </select>
             )}
             {showCount && (
@@ -167,6 +229,8 @@ export function EffectList({ value, onChange, verbs, locations, targets }: Props
         <button type="button" onClick={() => add({ choice: [newLeaf(), newLeaf()] })}>+ выбор</button>
         <button type="button" onClick={() => add({ group: [newLeaf()] })}>+ группа</button>
         <button type="button" onClick={() => add({ forEach: 'each', do: [newLeaf()] })}>+ forEach</button>
+        <button type="button" onClick={() => add({ dieRoll: [{ on: '6', then: [newLeaf()] }] })}>+ бросок</button>
+        <button type="button" onClick={() => add({ test: 'will', onPass: [], onFail: [newLeaf()] })}>+ проверка</button>
       </div>
     </div>
   );
