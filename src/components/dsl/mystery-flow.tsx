@@ -19,7 +19,7 @@ type Obj = Record<string, unknown>;
 
 const DEFAULT_SKILLS = ['lore', 'influence', 'observation', 'strength', 'will'];
 const FALLBACK_TRIGGERS = [
-  'encounterAtEldritchToken', 'encounterAtMysteryToken', 'gateClosed',
+  'encounterAtEldritchToken', 'gateClosed',
   'monsterDefeated', 'researchEncounterResolved',
 ];
 const FALLBACK_SOLVE = ['tokensOnCard', 'cluesOnCard', 'monsterDefeated'];

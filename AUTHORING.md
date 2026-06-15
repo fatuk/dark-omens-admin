@@ -107,8 +107,8 @@
   способы набора (встреча на жетоне/метке, закрытие врат по Омену и т.д.). Полностью —
   **`dark-omens-relay/MYSTERY-PROGRESS.md`**.
 - `progressHook` (один объект) — легаси-форма; новый формат — `progress: [ … ]`.
-  Триггеры: `encounterAtEldritchToken` · `encounterAtMysteryToken` · `gateClosed` ·
-  `monsterDefeated` · `researchEncounterResolved`.
+  Триггеры: `encounterAtEldritchToken` (клетка с жетоном ЛИБО помеченная локация
+  Тайны — это одно) · `gateClosed` · `monsterDefeated` · `researchEncounterResolved`.
 
 ### mythos
 ```json
