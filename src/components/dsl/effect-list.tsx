@@ -15,7 +15,7 @@ const NO_COUNT = new Set([
 // Verb'ы поля/доски/монстров/карты-носителя — движок применяет НЕ к сыщику, target
 // им не нужен (TargetResolver роутит только player-verb'ы). Прячем выпадашку цели.
 const NO_TARGET = new Set([
-  'advanceDoom', 'advanceOmen', 'moveOmen', 'retreatDoom',
+  'advanceDoom', 'advanceOmen', 'retreatDoom',
   'openGate', 'closeGate', 'discardGate', 'spawnMonster', 'monsterSurge',
   'discardMonster', 'defeatMonster', 'damageMonster',
   'placeClue', 'placeEldritchToken', 'placeRumor', 'resolveReckoning',
