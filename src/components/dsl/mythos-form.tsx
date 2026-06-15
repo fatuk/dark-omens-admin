@@ -27,11 +27,11 @@ export function MythosForm(
     <div className="dsl-form">
       <div className="prose-group">
         <div className="prose-group-title">При раскрытии (onReveal → onDraw)</div>
-        <EffectList value={(d['onReveal'] as Eff[]) ?? []} onChange={(e) => patch({ ...d, onReveal: e })} verbs={verbs} locations={meta?.locations} />
+        <EffectList value={(d['onReveal'] as Eff[]) ?? []} onChange={(e) => patch({ ...d, onReveal: e })} verbs={verbs} locations={meta?.locations} targets={meta?.dsl?.targets} />
       </div>
       <div className="prose-group">
         <div className="prose-group-title">Пока в игре (ongoing → whileInPlay)</div>
-        <EffectList value={(d['ongoing'] as Eff[]) ?? []} onChange={(e) => patch({ ...d, ongoing: e })} verbs={verbs} locations={meta?.locations} />
+        <EffectList value={(d['ongoing'] as Eff[]) ?? []} onChange={(e) => patch({ ...d, ongoing: e })} verbs={verbs} locations={meta?.locations} targets={meta?.dsl?.targets} />
       </div>
     </div>
   );

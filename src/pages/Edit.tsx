@@ -402,7 +402,9 @@ export function EditPage() {
                     <div className="dsl-ref-body">
                       <p><b>Узел-действие:</b> <span className="mono">{'{ "do": <verb>, "target"?, "amount"?|"count"?, "when"?, "repeat"? }'}</span></p>
                       <p><b>Вложенная проверка:</b> <span className="mono">{'{ "test": <skill>, "modifier"?, "onPass": [...], "onFail": [...] }'}</span></p>
-                      <p><b>Выбор / бросок:</b> <span className="mono">{'{ "choice": [<eff>, <eff>] }'}</span> · <span className="mono">{'{ "dieRoll": [{ "on": "6", "then": [...] }] }'}</span></p>
+                      <p><b>Выбор / группа:</b> <span className="mono">{'{ "choice": [<eff>, <eff>] }'}</span> · <span className="mono">{'{ "group": [<eff>] }'}</span></p>
+                      <p><b>forEach / бросок:</b> <span className="mono">{'{ "forEach": "each", "do": [<eff>] }'}</span> · <span className="mono">{'{ "dieRoll": [{ "on": "6", "then": [...] }] }'}</span></p>
+                      <p className="dsl-ref-note">forEach: проход по сыщикам (Ведущий первым), у каждого свой выбор; внутри <span className="mono">rightNeighbor</span>/<span className="mono">leftNeighbor</span> — от текущего сыщика.</p>
                       <p><b>skill:</b> <span className="mono">{meta.dsl.skills.join(', ')}</span></p>
                       <p><b>do (verb):</b> <span className="mono">{meta.dsl.actionVerbs.join(', ')}</span></p>
                       <p><b>target:</b> <span className="mono">{meta.dsl.targets.join(', ')}</span></p>
