@@ -40,6 +40,23 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+// Дескриптор verb'а из verb-манифеста relay (src/api/verb-manifest.ts) — метаданные
+// для дженерик-редактора эффектов: какие поля показывать, какие цели допустимы.
+export interface VerbParam {
+  name: string;
+  type: { t: string; values?: string[]; of?: string };
+  default?: unknown;
+}
+export interface VerbDef {
+  kind: string;
+  params: VerbParam[];
+  targets: string | null;
+  scales?: string;
+  repeatable?: boolean;
+  passive?: boolean;
+  describeKey: string;
+}
+
 export interface Meta {
   ancients: { id: string; name: string; epithet: string }[];
   locations: { id: string; name: string; nameEn: string; type: string }[];
@@ -54,6 +71,8 @@ export interface Meta {
     conditions: string[];
     mysteryTriggers?: string[];
     mysterySolveKinds?: string[];
+    verbs?: Record<string, VerbDef>;            // verb-манифест (метаданные полей)
+    targetGroups?: Record<string, string[]>;    // группы целей (id → targets)
   };
 }
 

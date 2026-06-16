@@ -1,45 +1,27 @@
 // Рекурсивный редактор DSL-эффектов: запись массива — лист-Action (verb + число +
 // цель + verb-специфичные селекты) ЛИБО структурный узел choice/group/forEach/dieRoll/
 // test с вложенными списками. Используется в конструкторах (mystery/mythos-формы).
+//
+// Поля листа выводятся из verb-МАНИФЕСТА (meta.dsl.verbs/targetGroups, источник —
+// relay src/api/verb-manifest.ts): показывать ли счётчик, какие цели допустимы,
+// какие enum-параметры. Никаких захардкоженных списков verb'ов — добавил verb в
+// манифест → поле появилось здесь само.
 import { Combobox } from '@/components/combobox';
 import { NumField } from '@/components/num-field';
+import type { VerbDef } from '@/lib/api';
 
 type Eff = Record<string, unknown>;
 
-// Verb'ы, которые движок применяет без числа (count игнорируется) — прячем степпер,
-// чтобы не вводить в заблуждение. monsterSurge масштабируется картой баланса сам.
-const NO_COUNT = new Set([
-  'closeGate', 'discardGate', 'monsterSurge', 'mysteryProgress', 'resolveReckoning',
-]);
-
-// Verb'ы поля/доски/монстров/карты-носителя — движок применяет НЕ к сыщику, target
-// им не нужен (TargetResolver роутит только player-verb'ы). Прячем выпадашку цели.
-const NO_TARGET = new Set([
-  'advanceDoom', 'advanceOmen', 'retreatDoom',
-  'openGate', 'closeGate', 'discardGate', 'spawnMonster', 'monsterSurge',
-  'discardMonster', 'defeatMonster', 'damageMonster',
-  'placeClue', 'placeEldritchToken', 'placeRumor', 'resolveReckoning',
-  'drawMythos', 'drawCard', 'flipCard', 'discardCard',
-  'lookAtGates', 'reorderGates', 'mysteryProgress',
-]);
-
-// Цели, которые движок реально применяет к СЫЩИКАМ (TargetResolver). Прочие из
-// meta.dsl.targets (eachMonster/eachGate/eachMythos…) к player-verb'ам не относятся.
-const PLAYER_TARGETS = new Set([
-  'lead', 'self', 'each', 'eachOnCity', 'eachOnWilderness', 'eachOnSea', 'eachOnSpace',
-  'eachWith', 'chosen', 'chosenInvestigator', 'rightNeighbor', 'leftNeighbor',
-]);
-
-// forEach итерирует сыщиков — осмысленны только цели-семейства each.
+// Фолбэки на случай, если relay ещё не отдаёт манифест (старый сервер).
 const FOREACH_TARGETS = ['each', 'eachOnCity', 'eachOnWilderness', 'eachOnSea', 'eachOnSpace'];
-
-// Навыки для узла test (вложенная проверка).
 const SKILLS = ['lore', 'influence', 'observation', 'strength', 'will'];
 
 type Props = {
   value: Eff[];
   onChange: (e: Eff[]) => void;
   verbs: string[];
+  verbDefs?: Record<string, VerbDef>;
+  targetGroups?: Record<string, string[]>;
   locations?: { id: string; name: string }[];
   targets?: string[];
 };
@@ -47,15 +29,45 @@ type Props = {
 const STRUCT = 'rounded border border-white/10 p-2 flex flex-col gap-1.5';
 const HEAD = 'flex items-center gap-2 text-xs uppercase tracking-wide opacity-70';
 
-export function EffectList({ value, onChange, verbs, locations, targets }: Props): JSX.Element {
+export function EffectList(
+  { value, onChange, verbs, verbDefs, targetGroups, locations, targets }: Props,
+): JSX.Element {
   const effs = value ?? [];
   const newLeaf = (): Eff => ({ do: verbs[0] ?? 'gainClue', count: 1 });
   const setNode = (i: number, node: Eff): void => onChange(effs.map((e, j) => (j === i ? node : e)));
   const patch = (i: number, p: Eff): void => setNode(i, { ...effs[i], ...p });
   const remove = (i: number): void => onChange(effs.filter((_, j) => j !== i));
   const add = (node: Eff): void => onChange([...effs, node]);
+
+  // ── Метаданные verb'а из манифеста ──────────────────────────────────────────
+  const defOf = (verb: string): VerbDef | undefined => verbDefs?.[verb];
+  // Имя числового параметра (amount/count) или null, если verb без числа.
+  const countParam = (verb: string): string | null => {
+    const d = defOf(verb);
+    if (!d) return 'count'; // нет манифеста → дефолтный счётчик
+    const p = d.params.find((q) => q.name === 'amount' || q.name === 'count');
+    return p ? p.name : null;
+  };
+  // enum-параметры (scale/scope/…) → дженерик-селект.
+  const enumParams = (verb: string): { name: string; values: string[] }[] => {
+    const d = defOf(verb);
+    if (!d) return [];
+    return d.params
+      .filter((p) => p.type.t === 'enum' && Array.isArray(p.type.values))
+      .map((p) => ({ name: p.name, values: p.type.values as string[] }));
+  };
+  // Список целей для дропдауна или null (target не нужен).
+  const targetOptions = (verb: string): string[] | null => {
+    const d = defOf(verb);
+    if (!d) return targets ?? null; // нет манифеста → старое поведение (все targets)
+    if (!d.targets) return null; // targets:null → без дропдауна
+    return targetGroups?.[d.targets] ?? targets ?? [];
+  };
+  const foreachOpts = targetGroups?.['foreach'] ?? FOREACH_TARGETS;
+
   const setNum = (i: number, n: number): void => {
-    const key = 'amount' in effs[i] ? 'amount' : 'count';
+    const verb = String(effs[i]['do'] ?? '');
+    const key = countParam(verb) ?? ('amount' in effs[i] ? 'amount' : 'count');
     patch(i, { [key]: n });
   };
 
@@ -63,6 +75,12 @@ export function EffectList({ value, onChange, verbs, locations, targets }: Props
   // одиночный узел — [node]. Обратно: 1 эффект → сам узел, >1 → {group:[…]}.
   const branchToList = (b: Eff): Eff[] => (Array.isArray(b['group']) ? (b['group'] as Eff[]) : [b]);
   const listToBranch = (list: Eff[]): Eff => (list.length === 1 ? list[0] : { group: list });
+
+  // Пробрасываем манифест во все вложенные списки.
+  const sub = (v: Eff[], on: (e: Eff[]) => void): JSX.Element => (
+    <EffectList value={v} onChange={on} verbs={verbs} verbDefs={verbDefs}
+      targetGroups={targetGroups} locations={locations} targets={targets} />
+  );
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -84,11 +102,8 @@ export function EffectList({ value, onChange, verbs, locations, targets }: Props
                     <button type="button" title="удалить ветку"
                       onClick={() => setBranches(branches.filter((_, x) => x !== k))}>×</button>
                   </div>
-                  <EffectList
-                    value={branchToList(b)}
-                    onChange={(list) => setBranches(branches.map((x, y) => (y === k ? listToBranch(list) : x)))}
-                    verbs={verbs} locations={locations} targets={targets}
-                  />
+                  {sub(branchToList(b),
+                    (list) => setBranches(branches.map((x, y) => (y === k ? listToBranch(list) : x))))}
                 </div>
               ))}
               <button type="button" onClick={() => setBranches([...branches, newLeaf()])}>+ ветка</button>
@@ -97,33 +112,29 @@ export function EffectList({ value, onChange, verbs, locations, targets }: Props
         }
         // ── forEach ───────────────────────────────────────────────────────────
         if ('forEach' in e) {
-          const sub = (e['do'] as Eff[]) ?? [];
           return (
             <div key={i} className={STRUCT}>
               <div className={HEAD}>
                 <span className="flex-1">Для каждого (forEach)</span>
                 <select value={String(e['forEach'] ?? 'each')}
                   onChange={(ev) => patch(i, { forEach: ev.target.value })} title="по кому проходим">
-                  {FOREACH_TARGETS.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {foreachOpts.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
                 <button type="button" onClick={() => remove(i)} title="удалить">×</button>
               </div>
-              <EffectList value={sub} onChange={(list) => patch(i, { do: list })}
-                verbs={verbs} locations={locations} targets={targets} />
+              {sub((e['do'] as Eff[]) ?? [], (list) => patch(i, { do: list }))}
             </div>
           );
         }
         // ── group ─────────────────────────────────────────────────────────────
         if ('group' in e) {
-          const sub = (e['group'] as Eff[]) ?? [];
           return (
             <div key={i} className={STRUCT}>
               <div className={HEAD}>
                 <span className="flex-1">Группа (group)</span>
                 <button type="button" onClick={() => remove(i)} title="удалить">×</button>
               </div>
-              <EffectList value={sub} onChange={(list) => patch(i, { group: list })}
-                verbs={verbs} locations={locations} targets={targets} />
+              {sub((e['group'] as Eff[]) ?? [], (list) => patch(i, { group: list }))}
             </div>
           );
         }
@@ -147,9 +158,8 @@ export function EffectList({ value, onChange, verbs, locations, targets }: Props
                     <button type="button" title="удалить грань"
                       onClick={() => setRolls(rolls.filter((_, x) => x !== k))}>×</button>
                   </div>
-                  <EffectList value={(r['then'] as Eff[]) ?? []}
-                    onChange={(list) => setRolls(rolls.map((x, y) => (y === k ? { ...x, then: list } : x)))}
-                    verbs={verbs} locations={locations} targets={targets} />
+                  {sub((r['then'] as Eff[]) ?? [],
+                    (list) => setRolls(rolls.map((x, y) => (y === k ? { ...x, then: list } : x))))}
                 </div>
               ))}
               <button type="button" onClick={() => setRolls([...rolls, { on: '6', then: [newLeaf()] }])}>+ грань</button>
@@ -171,45 +181,39 @@ export function EffectList({ value, onChange, verbs, locations, targets }: Props
                 <button type="button" onClick={() => remove(i)} title="удалить">×</button>
               </div>
               <div className="text-xs opacity-60">Успех (onPass)</div>
-              <EffectList value={(e['onPass'] as Eff[]) ?? []} onChange={(list) => patch(i, { onPass: list })}
-                verbs={verbs} locations={locations} targets={targets} />
+              {sub((e['onPass'] as Eff[]) ?? [], (list) => patch(i, { onPass: list }))}
               <div className="text-xs opacity-60">Провал (onFail)</div>
-              <EffectList value={(e['onFail'] as Eff[]) ?? []} onChange={(list) => patch(i, { onFail: list })}
-                verbs={verbs} locations={locations} targets={targets} />
+              {sub((e['onFail'] as Eff[]) ?? [], (list) => patch(i, { onFail: list }))}
             </div>
           );
         }
-        // ── лист-Action ───────────────────────────────────────────────────────
-        const showCount = !NO_COUNT.has(String(e['do'])) && !(e['do'] === 'placeClue' && e['scale'] === 'balance');
+        // ── лист-Action (поля из манифеста) ─────────────────────────────────────
+        const verb = String(e['do'] ?? '');
+        const cp = countParam(verb);
+        const showCount = cp !== null && !(verb === 'placeClue' && e['scale'] === 'balance');
+        const tOpts = targetOptions(verb);
         return (
           <div key={i} className="flex gap-1.5 items-center flex-wrap">
-            <Combobox className="flex-1" value={String(e['do'] ?? '')} options={verbs}
+            <Combobox className="flex-1" value={verb} options={verbs}
               onChange={(v) => patch(i, { do: v })} placeholder="verb…" />
-            {e['do'] === 'placeClue' && (
-              <select value={String(e['scale'] ?? '')}
-                onChange={(ev) => patch(i, { scale: ev.target.value || undefined })} title="Сколько улик класть">
-                <option value="">точное число</option>
-                <option value="balance">по карте баланса (игроки)</option>
+            {enumParams(verb).map((ep) => (
+              <select key={ep.name} value={String(e[ep.name] ?? '')} title={ep.name}
+                onChange={(ev) => patch(i, { [ep.name]: ev.target.value || undefined })}>
+                <option value="">— {ep.name} —</option>
+                {ep.values.map((v) => <option key={v} value={v}>{v}</option>)}
               </select>
-            )}
-            {e['do'] === 'resolveReckoning' && (
-              <select value={String(e['scope'] ?? '')}
-                onChange={(ev) => patch(i, { scope: ev.target.value || undefined })} title="Объём Расплаты">
-                <option value="">полный шаг</option>
-                <option value="mythosInPlay">только карты Мифов в игре</option>
-              </select>
-            )}
+            ))}
             {showCount && (
               <NumField value={Number(e['amount'] ?? e['count'] ?? 1)} onChange={(n) => setNum(i, n)} min={1} />
             )}
-            {targets && !NO_TARGET.has(String(e['do'])) && (
+            {tOpts && (
               <select value={String(e['target'] ?? '')}
                 onChange={(ev) => patch(i, { target: ev.target.value || undefined })} title="Цель эффекта">
                 <option value="">сам / активный</option>
-                {targets.filter((t) => PLAYER_TARGETS.has(t)).map((t) => <option key={t} value={t}>{t}</option>)}
+                {tOpts.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             )}
-            {e['do'] === 'placeEldritchToken' && locations && (
+            {verb === 'placeEldritchToken' && locations && (
               <select value={String(e['where'] ?? '')}
                 onChange={(ev) => patch(i, { where: ev.target.value })} title="Куда положить жетон Знамения">
                 <option value="">случайно</option>
