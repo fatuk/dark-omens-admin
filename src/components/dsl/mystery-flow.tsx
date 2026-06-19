@@ -29,12 +29,13 @@ const RESOURCES = ['clue', 'sanity', 'health', 'focus'];
 
 interface SolveData extends Record<string, unknown> {
   kind: string; n: number; perPlayer: number; kinds: string[];
+  locs: string[]; onLocs: (ids: string[]) => void;
   onPatch: (p: Obj) => void;
 }
 function SolveNode(props: NodeProps): JSX.Element {
   const d = props.data as unknown as SolveData;
   return (
-    <div className="rf-node nodrag nopan" style={{ minWidth: 200 }}>
+    <div className="rf-node nodrag nopan" style={{ minWidth: 220 }}>
       <Handle type="target" position={Position.Left} />
       <div className="rf-node-title">Тайна — финал (solveCondition)</div>
       <label>Условие (kind)</label>
@@ -51,6 +52,12 @@ function SolveNode(props: NodeProps): JSX.Element {
           <NumField value={d.n} onChange={(n) => d.onPatch({ n })} min={1} />
         </>
       )}
+      <label className="mt-1" title="id клеток (data/locations.json), куда лягут жетоны/улики Тайны. Берётся N по числу игроков; пусто → случайные клетки карты.">
+        Локации (id через запятую)
+      </label>
+      <input className="w-full nodrag" value={d.locs.join(', ')}
+        onChange={(e) => d.onLocs(e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
+        placeholder="Tunguska, 8, …" />
     </div>
   );
 }
@@ -196,7 +203,10 @@ export function MysteryFlow(
       id: 'solve', type: 'solve', position: { x: 580, y: Math.max(0, (hooks.length - 1) * 200) }, draggable: false,
       data: {
         kind: String(sc['kind'] ?? 'cluesOnCard'), n: Number(sc['n'] ?? 1), perPlayer: Number(sc['perPlayer'] ?? 0.5),
-        kinds: solveKinds, onPatch: (p: Obj) => patch({ ...d, solveCondition: { ...sc, ...p } }),
+        kinds: solveKinds,
+        locs: Array.isArray(d['locations']) ? (d['locations'] as unknown[]).map(String) : [],
+        onLocs: (ids: string[]) => patch({ ...d, locations: ids }),
+        onPatch: (p: Obj) => patch({ ...d, solveCondition: { ...sc, ...p } }),
       },
     });
     const edges: Edge[] = hooks.map((_, i) => ({

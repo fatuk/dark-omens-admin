@@ -23,10 +23,8 @@ export function AncientForm(
   const d = parsed;
   const patch = (next: Obj): void => onChange(JSON.stringify(next, null, 2));
 
-  const ml = (d['mysteryLocations'] ?? {}) as Obj;
-  const mlByAct = (ml['byAct'] ?? {}) as Obj;
-  const setMl = (act: string, locs: string[]): void =>
-    patch({ ...d, mysteryLocations: { ...ml, byAct: { ...mlByAct, [act]: locs } } });
+  // NB: «Локации Тайн» у Древнего УБРАНЫ — их задаёт сама карта Тайны (поле «Локации»
+  // в форме Тайны). Древний больше не определяет, где лежат жетоны/улики.
 
   const md = (d['mythosDeck'] ?? {}) as Obj;
   const mdByAct = (md['byAct'] ?? {}) as Obj;
@@ -40,24 +38,6 @@ export function AncientForm(
       <div className="prose-group">
         <div className="prose-group-title">Часы Рока (doomClock)</div>
         <NumField value={Number(d['doomClock'] ?? 14)} onChange={(n) => patch({ ...d, doomClock: n })} min={1} />
-      </div>
-
-      <div className="prose-group">
-        <div className="prose-group-title">Локации Тайн по актам (id через запятую)</div>
-        {ACTS.map((a) => {
-          const locs = Array.isArray(mlByAct[a]) ? (mlByAct[a] as unknown[]).map(String) : [];
-          return (
-            <div key={a} className="field">
-              <label>Акт {a}</label>
-              <input
-                className="w-full"
-                value={locs.join(', ')}
-                onChange={(e) => setMl(a, e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
-                placeholder="Arkham, 8, …"
-              />
-            </div>
-          );
-        })}
       </div>
 
       <div className="prose-group">
