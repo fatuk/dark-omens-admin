@@ -33,7 +33,10 @@ export function EffectList(
   { value, onChange, verbs, verbDefs, targetGroups, locations, targets }: Props,
 ): JSX.Element {
   const effs = value ?? [];
-  const newLeaf = (): Eff => ({ do: verbs[0] ?? 'gainClue', count: 1 });
+  // Новый лист — только {do}. count/amount НЕ ставим по умолчанию: движок и так берёт 1,
+  // а лишнее поле засоряет JSON (placeClue/monsterSurge вставляются чисто: {do:"…"}).
+  // Числовое поле появится в форме (показывает 1) и запишется, только если автор его изменит.
+  const newLeaf = (): Eff => ({ do: verbs[0] ?? 'gainClue' });
   const setNode = (i: number, node: Eff): void => onChange(effs.map((e, j) => (j === i ? node : e)));
   const patch = (i: number, p: Eff): void => setNode(i, { ...effs[i], ...p });
   const remove = (i: number): void => onChange(effs.filter((_, j) => j !== i));
@@ -195,7 +198,13 @@ export function EffectList(
         return (
           <div key={i} className="flex gap-1.5 items-center flex-wrap">
             <Combobox className="flex-1" value={verb} options={verbs}
-              onChange={(v) => patch(i, { do: v })} placeholder="verb…" />
+              onChange={(v) => {
+                // Смена verb'а: если у нового нет числового параметра (напр. monsterSurge) —
+                // убираем застрявшие count/amount, чтобы узел остался чистым {do:"…"}.
+                const next: Eff = { ...effs[i], do: v };
+                if (countParam(v) === null) { delete next['count']; delete next['amount']; }
+                setNode(i, next);
+              }} placeholder="verb…" />
             {enumParams(verb).map((ep) => (
               <select key={ep.name} value={String(e[ep.name] ?? '')} title={ep.name}
                 onChange={(ev) => patch(i, { [ep.name]: ev.target.value || undefined })}>
