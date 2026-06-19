@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useContentList, useMeta, type ListFilters } from '@/hooks';
-import { CONTENT_TYPES, ENCOUNTER_KINDS, kindsFor } from '@/lib/types';
+import { Link, useNavigate } from 'react-router-dom';
+import { useContentList, useMeta, useDeleteContent, type ListFilters } from '@/hooks';
+import { getContent, createContent } from '@/lib/api';
+import { CONTENT_TYPES, ENCOUNTER_KINDS, kindsFor, type ContentRecord } from '@/lib/types';
 
 // Фильтры списка переживают перезагрузку/навигацию (localStorage, как API base/key).
 const LS_FILTERS = 'doa_content_filters';
@@ -30,6 +31,39 @@ export function ListPage() {
   const { data: meta } = useMeta();
   const { data, isFetching, error, refetch } = useContentList(filters);
   const items = data?.items ?? [];
+
+  const nav = useNavigate();
+  const del = useDeleteContent();
+
+  // Удаление с подтверждением (необратимо). Список обновляется инвалидацией в хуке.
+  function deleteItem(id: string, title: string): void {
+    if (!window.confirm(`Удалить «${title || id}»? Действие необратимо.`)) return;
+    del.mutate(id);
+  }
+
+  // Копия: тянем полную запись, дублируем как ЧЕРНОВИК с пометкой «(копия)» в имени, и
+  // сразу открываем на правку — так проще лепить похожие карты.
+  async function copyItem(id: string): Promise<void> {
+    try {
+      const rec = await getContent(id);
+      const dup = (loc: 'en' | 'ru', suffix: string): Record<string, unknown> | undefined => {
+        const src = rec.i18n[loc];
+        if (!src) return undefined;
+        const nm = src['name'];
+        return { ...src, ...(nm ? { name: `${String(nm)}${suffix}` } : {}) };
+      };
+      const i18n: ContentRecord['i18n'] = {};
+      const ru = dup('ru', ' (копия)'); if (ru) i18n.ru = ru;
+      const en = dup('en', ' (copy)'); if (en) i18n.en = en;
+      const created = await createContent({
+        type: rec.type, kind: rec.kind, status: 'draft',
+        tags: rec.tags, data: rec.data, i18n,
+      });
+      nav(`/edit/${encodeURIComponent(created.id)}`);
+    } catch (e) {
+      window.alert(`Не удалось скопировать: ${(e as Error).message}`);
+    }
+  }
 
   const type = filters.type ?? '';
   const kind = filters.kind ?? '';
@@ -143,7 +177,18 @@ export function ListPage() {
               <td>{it.kind || '—'}</td>
               <td><span className={`badge ${it.status}`}>{it.status}</span></td>
               <td>{it.tags.map((t) => <span key={t} className="tag">{t}</span>)}</td>
-              <td><Link to={`/edit/${encodeURIComponent(it.id)}`}>править</Link></td>
+              <td>
+                <button onClick={() => void copyItem(it.id)} style={{ marginRight: 12 }}>
+                  Копия
+                </button>
+                <button
+                  onClick={() => deleteItem(it.id, it.title ?? '')}
+                  disabled={del.isPending}
+                  style={{ color: '#e06c6c' }}
+                >
+                  Удалить
+                </button>
+              </td>
             </tr>
           ))}
           {items.length === 0 && !isFetching && (
