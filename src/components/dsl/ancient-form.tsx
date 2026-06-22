@@ -1,15 +1,18 @@
-// Конструктор Древнего (форма-рецепт): doomClock + локации Тайн по актам +
-// колода Мифов по актам (карт каждого цвета). Не эффекты — структура/числа.
+// Конструктор Древнего (форма-рецепт): doomClock + Расплата Древнего (onReckoning) +
+// колода Мифов по актам (карт каждого цвета). Эффекты Расплаты — DSL, остальное —
+// структура/числа. Локации Тайн здесь НЕТ — их задаёт сама карта Тайны.
 import { useMemo } from 'react';
 import type { Meta } from '@/lib/api';
 import { NumField } from '@/components/num-field';
+import { EffectList } from '@/components/dsl/effect-list';
 
+type Eff = Record<string, unknown>;
 type Obj = Record<string, unknown>;
 const ACTS = ['1', '2', '3'];
 const COLORS = ['green', 'yellow', 'blue'];
 
 export function AncientForm(
-  { value, onChange }: { value: string; onChange: (json: string) => void; meta?: Meta },
+  { value, onChange, meta }: { value: string; onChange: (json: string) => void; meta?: Meta },
 ): JSX.Element {
   const parsed = useMemo<Obj | null>(() => {
     try {
@@ -22,6 +25,11 @@ export function AncientForm(
 
   const d = parsed;
   const patch = (next: Obj): void => onChange(JSON.stringify(next, null, 2));
+  const verbs = [...(meta?.dsl?.actionVerbs ?? [])].sort();
+  const listProps = {
+    verbs, verbDefs: meta?.dsl?.verbs, targetGroups: meta?.dsl?.targetGroups,
+    locations: meta?.locations, targets: meta?.dsl?.targets,
+  };
 
   // NB: «Локации Тайн» у Древнего УБРАНЫ — их задаёт сама карта Тайны (поле «Локации»
   // в форме Тайны). Древний больше не определяет, где лежат жетоны/улики.
@@ -38,6 +46,11 @@ export function AncientForm(
       <div className="prose-group">
         <div className="prose-group-title">Часы Рока (doomClock)</div>
         <NumField value={Number(d['doomClock'] ?? 14)} onChange={(n) => patch({ ...d, doomClock: n })} min={1} />
+      </div>
+
+      <div className="prose-group">
+        <div className="prose-group-title">Расплата Древнего (onReckoning) — первый тир каждой Расплаты</div>
+        <EffectList value={(d['onReckoning'] as Eff[]) ?? []} onChange={(e) => patch({ ...d, onReckoning: e })} {...listProps} />
       </div>
 
       <div className="prose-group">
