@@ -5,7 +5,7 @@
 // Интерфейс как у прозы карточки: табы языка EN/RU (общие на список), на каждую
 // улику — генерация LLM (по имени локации + общий brief) и перевод активной локали
 // в другую. Текст (title/description) живёт по локалям внутри самой улики.
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LOCALES, type Locale } from '@/lib/types';
 import { AutoTextarea } from '@/components/auto-textarea';
 import { useDraft, useTranslate } from '@/hooks';
@@ -35,6 +35,16 @@ export function ClueList({ value, onChange, locations }: Props): JSX.Element {
     if (n.has(i)) n.delete(i); else n.add(i);
     return n;
   });
+  // При загрузке страницы (данные Древнего приходят асинхронно) — все улики свёрнуты.
+  // Срабатывает один раз, когда список впервые непуст. Ручное «+ улика» помечает
+  // inited (свежую улику не сворачиваем — её сразу редактируют).
+  const inited = useRef(false);
+  useEffect(() => {
+    if (!inited.current && clues.length > 0) {
+      setCollapsed(new Set(clues.map((_, i) => i)));
+      inited.current = true;
+    }
+  }, [clues.length]);
   const draftMut = useDraft();
   const translateMut = useTranslate();
   const toast = useToast();
@@ -45,7 +55,10 @@ export function ClueList({ value, onChange, locations }: Props): JSX.Element {
   const setText = (i: number, field: 'title' | 'description', l: string, val: string): void =>
     patch(i, { [field]: { ...clues[i][field], [l]: val } } as Partial<Clue>);
   const remove = (i: number): void => onChange(clues.filter((_, j) => j !== i));
-  const add = (): void => onChange([...clues, { location: '', title: {}, description: {} }]);
+  const add = (): void => {
+    inited.current = true;  // не даём эффекту свернуть только что добавленную улику
+    onChange([...clues, { location: '', title: {}, description: {} }]);
+  };
 
   const locName = (id: string): string => locs.find((l) => l.id === id)?.name || id || '—';
   const other: Locale = loc === 'en' ? 'ru' : 'en';
