@@ -103,7 +103,7 @@ export function ClueList({ value, onChange, locations }: Props): JSX.Element {
           </button>
         ))}
       </div>
-      <div className="field">
+      <div className="field sticky top-0 z-10 pb-1" style={{ background: '#110f18' }}>
         <label>Подсказка для рыбы (опц.) — тема/тон; имя локации подставляется само</label>
         <AutoTextarea value={brief} onChange={(e) => setBrief(e.target.value)} maxLength={600}
           placeholder="напр.: обрывок дневника, упор на тревогу" className="min-h-[42px]" />
