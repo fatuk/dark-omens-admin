@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import type { Meta } from '@/lib/api';
 import { NumField } from '@/components/num-field';
 import { EffectList } from '@/components/dsl/effect-list';
+import { ClueList, type Clue } from '@/components/dsl/clue-list';
 
 type Eff = Record<string, unknown>;
 type Obj = Record<string, unknown>;
@@ -51,6 +52,11 @@ export function AncientForm(
       <div className="prose-group">
         <div className="prose-group-title">Расплата Древнего (onReckoning) — первый тир каждой Расплаты</div>
         <EffectList value={(d['onReckoning'] as Eff[]) ?? []} onChange={(e) => patch({ ...d, onReckoning: e })} {...listProps} />
+      </div>
+
+      <div className="prose-group">
+        <div className="prose-group-title">Улики по локациям (clues) — контент выдаётся сыщику; картинка ищется по id (как арт ассета)</div>
+        <ClueList value={(d['clues'] as Clue[]) ?? []} onChange={(clues) => patch({ ...d, clues })} locations={meta?.locations} />
       </div>
 
       <div className="prose-group">

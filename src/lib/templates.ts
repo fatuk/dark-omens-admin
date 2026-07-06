@@ -50,6 +50,7 @@ export function dataTemplate(type: string, kind: string): Record<string, unknown
     return {
       doomClock: 14,
       mysteryLocations: { byAct: { '1': [], '2': [], '3': [] } },
+      clues: [],
       mythosDeck: {
         byAct: {
           '1': { green: 2, yellow: 1, blue: 1 },
