@@ -29,6 +29,12 @@ export function ClueList({ value, onChange, locations }: Props): JSX.Element {
   const locs = locations ?? [];
   const [loc, setLoc] = useState<Locale>('ru');
   const [brief, setBrief] = useState('');
+  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+  const toggle = (i: number): void => setCollapsed((s) => {
+    const n = new Set(s);
+    if (n.has(i)) n.delete(i); else n.add(i);
+    return n;
+  });
   const draftMut = useDraft();
   const translateMut = useTranslate();
   const toast = useToast();
@@ -102,29 +108,46 @@ export function ClueList({ value, onChange, locations }: Props): JSX.Element {
         <AutoTextarea value={brief} onChange={(e) => setBrief(e.target.value)} maxLength={600}
           placeholder="напр.: обрывок дневника, упор на тревогу" className="min-h-[42px]" />
       </div>
-      {clues.map((c, i) => (
-        <div key={i} className={STRUCT}>
-          <div className={HEAD}>
-            <span className="flex-1">Улика {i + 1}</span>
-            <button type="button" onClick={() => void gen(i)} disabled={busy} title="Сгенерировать текст (LLM)">
-              ✨ Рыба ({loc})
-            </button>
-            <button type="button" onClick={() => void tr(i)} disabled={busy} title="Перевести на другой язык">
-              {loc.toUpperCase()}→{other.toUpperCase()}
-            </button>
-            <button type="button" onClick={() => remove(i)} title="удалить">×</button>
+      {clues.map((c, i) => {
+        const open = !collapsed.has(i);
+        const summary = c.location || c.title?.[loc]
+          ? ` — ${locName(c.location)}${c.title?.[loc] ? ` · ${c.title[loc]}` : ''}`
+          : '';
+        return (
+          <div key={i} className={STRUCT}>
+            <div className={HEAD}>
+              <button type="button" onClick={() => toggle(i)} title={open ? 'свернуть' : 'развернуть'}>
+                {open ? '▾' : '▸'}
+              </button>
+              <span className="flex-1">Улика {i + 1}{open ? '' : summary}</span>
+              {open && (
+                <>
+                  <button type="button" onClick={() => void gen(i)} disabled={busy} title="Сгенерировать текст (LLM)">
+                    ✨ Рыба ({loc})
+                  </button>
+                  <button type="button" onClick={() => void tr(i)} disabled={busy} title="Перевести на другой язык">
+                    {loc.toUpperCase()}→{other.toUpperCase()}
+                  </button>
+                </>
+              )}
+              <button type="button" onClick={() => remove(i)} title="удалить">×</button>
+            </div>
+            {open && (
+              <>
+                <select value={c.location} title="Локация улики (её id = имя файла картинки в игре)"
+                  onChange={(ev) => patch(i, { location: ev.target.value })}>
+                  <option value="">— локация —</option>
+                  {optionsFor(c.location).map((l) => <option key={l.id} value={l.id}>{l.id} - {l.name}</option>)}
+                </select>
+                <input className="w-full" value={c.title?.[loc] ?? ''} placeholder={`Заголовок (${loc})`}
+                  onChange={(ev) => setText(i, 'title', loc, ev.target.value)} />
+                <AutoTextarea value={c.description?.[loc] ?? ''} placeholder={`Описание (${loc})`}
+                  onChange={(ev) => setText(i, 'description', loc, ev.target.value)} />
+              </>
+            )}
           </div>
-          <select value={c.location} title="Локация улики (её id = имя файла картинки в игре)"
-            onChange={(ev) => patch(i, { location: ev.target.value })}>
-            <option value="">— локация —</option>
-            {optionsFor(c.location).map((l) => <option key={l.id} value={l.id}>{l.id} - {l.name}</option>)}
-          </select>
-          <input className="w-full" value={c.title?.[loc] ?? ''} placeholder={`Заголовок (${loc})`}
-            onChange={(ev) => setText(i, 'title', loc, ev.target.value)} />
-          <AutoTextarea value={c.description?.[loc] ?? ''} placeholder={`Описание (${loc})`}
-            onChange={(ev) => setText(i, 'description', loc, ev.target.value)} />
-        </div>
-      ))}
+        );
+      })}
       <button type="button" onClick={add}>+ улика</button>
     </div>
   );
