@@ -117,7 +117,7 @@ export function ClueList({ value, onChange, locations }: Props): JSX.Element {
           <select value={c.location} title="Локация улики (её id = имя файла картинки в игре)"
             onChange={(ev) => patch(i, { location: ev.target.value })}>
             <option value="">— локация —</option>
-            {optionsFor(c.location).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+            {optionsFor(c.location).map((l) => <option key={l.id} value={l.id}>{l.id} - {l.name}</option>)}
           </select>
           <input className="w-full" value={c.title?.[loc] ?? ''} placeholder={`Заголовок (${loc})`}
             onChange={(ev) => setText(i, 'title', loc, ev.target.value)} />
