@@ -110,16 +110,15 @@ export function ClueList({ value, onChange, locations }: Props): JSX.Element {
       </div>
       {clues.map((c, i) => {
         const open = !collapsed.has(i);
-        const summary = c.location || c.title?.[loc]
-          ? ` — ${locName(c.location)}${c.title?.[loc] ? ` · ${c.title[loc]}` : ''}`
-          : '';
+        const label = c.location ? locName(c.location) : `Улика ${i + 1}`;
+        const titlePart = !open && c.title?.[loc] ? ` · ${c.title[loc]}` : '';
         return (
           <div key={i} className={STRUCT}>
             <div className={HEAD}>
               <button type="button" onClick={() => toggle(i)} title={open ? 'свернуть' : 'развернуть'}>
                 {open ? '▾' : '▸'}
               </button>
-              <span className="flex-1">Улика {i + 1}{open ? '' : summary}</span>
+              <span className="flex-1">{label}{titlePart}</span>
               {open && (
                 <>
                   <button type="button" onClick={() => void gen(i)} disabled={busy} title="Сгенерировать текст (LLM)">
