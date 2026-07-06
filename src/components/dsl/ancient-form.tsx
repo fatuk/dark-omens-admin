@@ -55,7 +55,7 @@ export function AncientForm(
       </div>
 
       <div className="prose-group">
-        <div className="prose-group-title">Улики по локациям (clues) — контент выдаётся сыщику; картинка ищется по id (как арт ассета)</div>
+        <div className="prose-group-title">Улики по локациям (clues) — ключ = локация; картинка в игре по id локации (как арт ассета)</div>
         <ClueList value={(d['clues'] as Clue[]) ?? []} onChange={(clues) => patch({ ...d, clues })} locations={meta?.locations} />
       </div>
 
