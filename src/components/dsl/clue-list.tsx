@@ -43,6 +43,10 @@ export function ClueList({ value, onChange, locations }: Props): JSX.Element {
 
   const locName = (id: string): string => locs.find((l) => l.id === id)?.name || id || '—';
   const other: Locale = loc === 'en' ? 'ru' : 'en';
+  // Локации, уже занятые уликами (одна улика на локацию). Для селекта улики i
+  // показываем свободные + её собственную.
+  const used = new Set(clues.map((c) => c.location).filter(Boolean));
+  const optionsFor = (own: string): LocMeta[] => locs.filter((l) => l.id === own || !used.has(l.id));
 
   // LLM-рыба для одной улики: заголовок + описание на активном языке. Фрейминг
   // «улика на локации X» + общий brief уходят в НАПРАВЛЕНИЕ автора (draft-эндпоинт).
@@ -113,7 +117,7 @@ export function ClueList({ value, onChange, locations }: Props): JSX.Element {
           <select value={c.location} title="Локация улики (её id = имя файла картинки в игре)"
             onChange={(ev) => patch(i, { location: ev.target.value })}>
             <option value="">— локация —</option>
-            {locs.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+            {optionsFor(c.location).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
           <input className="w-full" value={c.title?.[loc] ?? ''} placeholder={`Заголовок (${loc})`}
             onChange={(ev) => setText(i, 'title', loc, ev.target.value)} />
