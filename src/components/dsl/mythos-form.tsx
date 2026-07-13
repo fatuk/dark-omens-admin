@@ -1,5 +1,5 @@
-// Конструктор карты Мифов (форма): два списка эффектов — onReveal (→onDraw) и
-// ongoing (→whileInPlay) — плюс секция «Слух» (Ongoing Rumor): таймер-жетоны,
+// Конструктор карты Мифов (форма): два списка эффектов — onDraw и whileInPlay
+// (движковые имена) — плюс секция «Слух» (Ongoing Rumor): таймер-жетоны,
 // DSL Расплаты/истечения, способ решения. Цвет берётся из вида/тега карточки.
 import { useMemo } from 'react';
 import type { Meta } from '@/lib/api';
@@ -47,16 +47,24 @@ export function MythosForm(
   return (
     <div className="dsl-form">
       <div className="prose-group">
-        <div className="prose-group-title">При раскрытии (onReveal → onDraw)</div>
-        <EffectList value={(d['onReveal'] as Eff[]) ?? []} onChange={(e) => patch({ ...d, onReveal: e })} {...listProps} />
+        <div className="prose-group-title">При раскрытии (onDraw)</div>
+        <EffectList
+          value={(d['onDraw'] as Eff[]) ?? (d['onReveal'] as Eff[]) ?? []}
+          onChange={(e) => { const nd: Obj = { ...d, onDraw: e }; delete nd['onReveal']; patch(nd); }}
+          {...listProps}
+        />
       </div>
       <div className="prose-group">
         <div className="prose-group-title">Расплата (onReckoning) — символ ☼, срабатывает, пока карта в игре</div>
         <EffectList value={(d['onReckoning'] as Eff[]) ?? []} onChange={(e) => patch({ ...d, onReckoning: e })} {...listProps} />
       </div>
       <div className="prose-group">
-        <div className="prose-group-title">Пока в игре (ongoing → whileInPlay)</div>
-        <EffectList value={(d['ongoing'] as Eff[]) ?? []} onChange={(e) => patch({ ...d, ongoing: e })} {...listProps} />
+        <div className="prose-group-title">Пока в игре (whileInPlay)</div>
+        <EffectList
+          value={(d['whileInPlay'] as Eff[]) ?? (d['ongoing'] as Eff[]) ?? []}
+          onChange={(e) => { const nd: Obj = { ...d, whileInPlay: e }; delete nd['ongoing']; patch(nd); }}
+          {...listProps}
+        />
       </div>
 
       <div className="prose-group">

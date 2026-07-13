@@ -117,7 +117,7 @@
 («заплати улику, чтобы избежать»):
 ```json
 {
-  "onReveal": [
+  "onDraw": [
     { "do": "advanceOmen" },
     { "do": "placeClue" },
     { "forEach": "each", "do": [
@@ -129,12 +129,14 @@
       ] }
     ] }
   ],
-  "ongoing": []
+  "whileInPlay": []
 }
 ```
-Маппинг в колоду: `onReveal → onDraw`, `ongoing → whileInPlay`. Цвет берётся из `kind`/тега
-`color:`; кол-во по акту задаёт **рецепт Древнего** (`mythosDeck.byAct`). `cost.spend` —
-один из `health · sanity · clue · asset · spell · focus`.
+`onDraw` — эффекты при вытяжке карты, `whileInPlay` — пока карта в игре (движковые имена).
+Легаси-алиасы `onReveal`/`ongoing` ещё принимаются ридером relay, но новые карточки пишем
+на `onDraw`/`whileInPlay` (правка старой карточки авто-мигрирует ключ). Цвет берётся из
+`kind`/тега `color:`; кол-во по акту задаёт **рецепт Древнего** (`mythosDeck.byAct`).
+`cost.spend` — один из `health · sanity · clue · asset · spell · focus`.
 
 ### ancient (Древний) — рецепт кампании
 ID карточки = **slug** Древнего (по нему ссылаются `ancient:<slug>`).
