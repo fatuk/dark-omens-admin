@@ -261,6 +261,16 @@ export function EffectList(
                 </optgroup>
               </select>
             )}
+            {verb === 'openGate' && locations && (
+              <select value={String(e['where'] ?? '')}
+                onChange={(ev) => patch(i, { where: ev.target.value || undefined })} title="Где открыть Врата">
+                <option value="">движок выберет гейт-спейс</option>
+                <option value="self">в локации сыщика</option>
+                <optgroup label="конкретная локация">
+                  {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </optgroup>
+              </select>
+            )}
             <button type="button" onClick={() => remove(i)} title="удалить">×</button>
           </div>
         );
