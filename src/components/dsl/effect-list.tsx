@@ -15,6 +15,8 @@ type Eff = Record<string, unknown>;
 // Фолбэки на случай, если relay ещё не отдаёт манифест (старый сервер).
 const FOREACH_TARGETS = ['each', 'eachOnCity', 'eachOnWilderness', 'eachOnSea', 'eachOnSpace'];
 const SKILLS = ['lore', 'influence', 'observation', 'strength', 'will'];
+// Ресурсы стоимости (cost.spend) — зеркало relay effect-dsl.ts COST_RESOURCES.
+const COST_RESOURCES = ['health', 'sanity', 'clue', 'asset', 'spell', 'focus'];
 
 type Props = {
   value: Eff[];
@@ -24,13 +26,16 @@ type Props = {
   targetGroups?: Record<string, string[]>;
   locations?: { id: string; name: string }[];
   targets?: string[];
+  // Разрешить редактировать cost (цена опции) на листах. Включается для веток
+  // choice — «заплати улику/рассудок, чтобы выбрать эту опцию» (как в картах Мифов).
+  allowCost?: boolean;
 };
 
 const STRUCT = 'rounded border border-white/10 p-2 flex flex-col gap-1.5';
 const HEAD = 'flex items-center gap-2 text-xs uppercase tracking-wide opacity-70';
 
 export function EffectList(
-  { value, onChange, verbs, verbDefs, targetGroups, locations, targets }: Props,
+  { value, onChange, verbs, verbDefs, targetGroups, locations, targets, allowCost }: Props,
 ): JSX.Element {
   const effs = value ?? [];
   // Новый лист — только {do}. count/amount НЕ ставим по умолчанию: движок и так берёт 1,
@@ -79,10 +84,11 @@ export function EffectList(
   const branchToList = (b: Eff): Eff[] => (Array.isArray(b['group']) ? (b['group'] as Eff[]) : [b]);
   const listToBranch = (list: Eff[]): Eff => (list.length === 1 ? list[0] : { group: list });
 
-  // Пробрасываем манифест во все вложенные списки.
-  const sub = (v: Eff[], on: (e: Eff[]) => void): JSX.Element => (
+  // Пробрасываем манифест во все вложенные списки. allowCost наследуется вглубь
+  // (ветка choice включает его → cost доступен и во вложенных group/forEach).
+  const sub = (v: Eff[], on: (e: Eff[]) => void, ac: boolean = !!allowCost): JSX.Element => (
     <EffectList value={v} onChange={on} verbs={verbs} verbDefs={verbDefs}
-      targetGroups={targetGroups} locations={locations} targets={targets} />
+      targetGroups={targetGroups} locations={locations} targets={targets} allowCost={ac} />
   );
 
   return (
@@ -106,7 +112,7 @@ export function EffectList(
                       onClick={() => setBranches(branches.filter((_, x) => x !== k))}>×</button>
                   </div>
                   {sub(branchToList(b),
-                    (list) => setBranches(branches.map((x, y) => (y === k ? listToBranch(list) : x))))}
+                    (list) => setBranches(branches.map((x, y) => (y === k ? listToBranch(list) : x))), true)}
                 </div>
               ))}
               <button type="button" onClick={() => setBranches([...branches, newLeaf()])}>+ ветка</button>
@@ -222,6 +228,28 @@ export function EffectList(
                 {tOpts.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             )}
+            {allowCost && (() => {
+              // Цена опции: потратить ресурс, чтобы выбрать эту ветку choice
+              // ({cost:{spend,amount}}). spend='' → узел без цены (чистый {do}).
+              const cost = e['cost'] as Eff | undefined;
+              return (
+                <>
+                  <select value={String(cost?.['spend'] ?? '')} title="Цена: потратить ресурс за эту опцию"
+                    onChange={(ev) => {
+                      const spend = ev.target.value;
+                      if (!spend) { const n = { ...effs[i] }; delete n['cost']; setNode(i, n); }
+                      else patch(i, { cost: { spend, amount: Number(cost?.['amount'] ?? 1) } });
+                    }}>
+                    <option value="">— без цены —</option>
+                    {COST_RESOURCES.map((r) => <option key={r} value={r}>−{r}</option>)}
+                  </select>
+                  {cost != null && (
+                    <NumField value={Number(cost['amount'] ?? 1)}
+                      onChange={(n) => patch(i, { cost: { ...cost, amount: n } })} min={1} />
+                  )}
+                </>
+              );
+            })()}
             {verb === 'placeEldritchToken' && locations && (
               <select value={String(e['where'] ?? '')}
                 onChange={(ev) => patch(i, { where: ev.target.value })} title="Куда положить жетон Знамения">

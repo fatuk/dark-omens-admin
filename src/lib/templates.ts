@@ -42,7 +42,28 @@ export function dataTemplate(type: string, kind: string): Record<string, unknown
     };
   }
   if (type === 'mythos') {
-    return { onReveal: [{ do: 'advanceDoom', amount: 1 }], ongoing: [] };
+    // Репрезентативный скелет боевой карты (не пустышка): канонический зачин
+    // advanceOmen (двигает знамение И считает дум по вратам нового цвета) →
+    // давление на доску placeClue → per-сыщик выбор forEach:each { choice }.
+    // Это типовая форма карт колоды; автор правит ветки/цены под свою карту.
+    return {
+      onReveal: [
+        { do: 'advanceOmen' },
+        { do: 'placeClue' },
+        {
+          forEach: 'each',
+          do: [
+            {
+              choice: [
+                { do: 'loseHealth', amount: 1, target: 'self' },
+                { do: 'loseSanity', amount: 1, target: 'self' },
+              ],
+            },
+          ],
+        },
+      ],
+      ongoing: [],
+    };
   }
   // Древний — рецепт кампании: трек рока, локации Тайн по актам и СХЕМА колоды
   // Мифов (сколько карт каждого цвета на акт; пул Мифов берётся per-ancient).

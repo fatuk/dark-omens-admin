@@ -111,11 +111,30 @@
   Тайны — это одно) · `gateClosed` · `monsterDefeated` · `researchEncounterResolved`.
 
 ### mythos
+Типовая карта: зачин `advanceOmen` (двигает знамение И считает дум по вратам нового
+цвета) → давление на доску (`placeClue`/`monsterSurge`/`openGate`) → per-сыщик выбор
+`forEach:each { choice }`. Ветка `choice` может стоить ресурс — `cost:{spend,amount}`
+(«заплати улику, чтобы избежать»):
 ```json
-{ "onReveal": [ { "do": "advanceDoom", "amount": 1 } ], "ongoing": [] }
+{
+  "onReveal": [
+    { "do": "advanceOmen" },
+    { "do": "placeClue" },
+    { "forEach": "each", "do": [
+      { "choice": [
+        { "do": "text", "text": "CHOICE_SPEND_CLUE", "cost": { "spend": "clue", "amount": 1 } },
+        { "group": [
+          { "do": "gainCondition", "condition": "injury", "target": "self" }
+        ] }
+      ] }
+    ] }
+  ],
+  "ongoing": []
+}
 ```
 Маппинг в колоду: `onReveal → onDraw`, `ongoing → whileInPlay`. Цвет берётся из `kind`/тега
-`color:`; кол-во по акту задаёт **рецепт Древнего** (`mythosDeck.byAct`).
+`color:`; кол-во по акту задаёт **рецепт Древнего** (`mythosDeck.byAct`). `cost.spend` —
+один из `health · sanity · clue · asset · spell · focus`.
 
 ### ancient (Древний) — рецепт кампании
 ID карточки = **slug** Древнего (по нему ссылаются `ancient:<slug>`).
