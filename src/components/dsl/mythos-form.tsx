@@ -33,6 +33,10 @@ export function MythosForm(
   const listProps = {
     verbs, verbDefs: meta?.dsl?.verbs, targetGroups: meta?.dsl?.targetGroups,
     locations: meta?.locations, targets: meta?.dsl?.targets,
+    refOptions: {
+      condition: meta?.dsl?.conditions ?? [],
+      skill: meta?.dsl?.skills ?? [],
+    },
   };
 
   // ── Слух (блок data.rumor) ──
