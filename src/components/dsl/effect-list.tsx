@@ -67,6 +67,12 @@ export function EffectList(
       .filter((p) => p.type.t === 'ref' && typeof p.type.of === 'string')
       .map((p) => ({ name: p.name, of: String(p.type.of), required: Boolean(p.required) }));
   };
+  // str-параметры (where/context/trait/…): where → дропдаун локаций, прочие → текст.
+  const strParams = (verb: string): string[] => {
+    const d = defOf(verb);
+    if (!d) return [];
+    return d.params.filter((p) => p.type.t === 'str').map((p) => p.name);
+  };
   // enum-параметры (scale/scope/…) → дженерик-селект.
   const enumParams = (verb: string): { name: string; values: string[] }[] => {
     const d = defOf(verb);
@@ -244,6 +250,23 @@ export function EffectList(
                   onChange={(ev) => patch(i, { [rp.name]: ev.target.value || undefined })} />
               );
             })}
+            {strParams(verb).map((name) => (
+              name === 'where' && locations ? (
+                <select key={name} value={String(e[name] ?? '')} title="Где: сам / помеченные / локация"
+                  onChange={(ev) => patch(i, { [name]: ev.target.value || undefined })}>
+                  <option value="">по умолчанию</option>
+                  <option value="self">в локации сыщика</option>
+                  <option value="marked">на помеченные локации</option>
+                  <optgroup label="конкретная локация">
+                    {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                  </optgroup>
+                </select>
+              ) : (
+                <input key={name} className="w-28" value={String(e[name] ?? '')}
+                  placeholder={name} title={name}
+                  onChange={(ev) => patch(i, { [name]: ev.target.value || undefined })} />
+              )
+            ))}
             {showCount && (
               <NumField value={Number(e['amount'] ?? e['count'] ?? 1)} onChange={(n) => setNum(i, n)} min={1} />
             )}
@@ -276,27 +299,6 @@ export function EffectList(
                 </>
               );
             })()}
-            {verb === 'placeEldritchToken' && locations && (
-              <select value={String(e['where'] ?? '')}
-                onChange={(ev) => patch(i, { where: ev.target.value })} title="Куда положить жетон Знамения">
-                <option value="">случайно</option>
-                <option value="self">на карту Тайны</option>
-                <option value="marked">на помеченные локации</option>
-                <optgroup label="конкретная локация">
-                  {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-                </optgroup>
-              </select>
-            )}
-            {verb === 'openGate' && locations && (
-              <select value={String(e['where'] ?? '')}
-                onChange={(ev) => patch(i, { where: ev.target.value || undefined })} title="Где открыть Врата">
-                <option value="">движок выберет гейт-спейс</option>
-                <option value="self">в локации сыщика</option>
-                <optgroup label="конкретная локация">
-                  {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-                </optgroup>
-              </select>
-            )}
             <button type="button" onClick={() => remove(i)} title="удалить">×</button>
           </div>
         );
