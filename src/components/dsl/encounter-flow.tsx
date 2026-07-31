@@ -12,6 +12,8 @@ import '@xyflow/react/dist/style.css';
 import type { Meta } from '@/lib/api';
 import { Combobox } from '@/components/combobox';
 import { NumField } from '@/components/num-field';
+import { EffectList } from '@/components/dsl/effect-list';
+import type { VerbDef } from '@/lib/api';
 
 type Eff = Record<string, unknown>;
 interface FlatData {
@@ -81,38 +83,27 @@ interface EffData extends Record<string, unknown> {
   accent: 'green' | 'red';
   effects: Eff[];
   verbs: string[];
+  verbDefs?: Record<string, VerbDef>;
+  targetGroups?: Record<string, string[]>;
+  locations?: { id: string; name: string }[];
+  targets?: string[];
+  refOptions?: Record<string, string[]>;
   onEffects: (e: Eff[]) => void;
 }
 
+// Редактор исходов встречи. Использует общий EffectList (поля из verb-манифеста:
+// счётчик только где есть count/amount, ref-параметры condition/skill — дропдаундом),
+// чтобы не расходиться с движком (раньше был свой редактор, всегда клавший count:1).
 function EffectsNode(props: NodeProps): JSX.Element {
   const d = props.data as unknown as EffData;
-  const effs = d.effects;
-  const setRow = (i: number, patch: Eff) =>
-    d.onEffects(effs.map((e, j) => (j === i ? { ...e, ...patch } : e)));
-  const setNum = (i: number, val: number) => {
-    const key = 'amount' in effs[i] ? 'amount' : 'count';
-    setRow(i, { [key]: val });
-  };
-  const add = () => d.onEffects([...effs, { do: d.verbs[0] ?? 'gainClue', count: 1 }]);
-  const del = (i: number) => d.onEffects(effs.filter((_, j) => j !== i));
   return (
-    <div className={`rf-node ${d.accent === 'green' ? 'rf-ok' : 'rf-fail'}`}>
+    <div className={`rf-node nodrag nopan ${d.accent === 'green' ? 'rf-ok' : 'rf-fail'}`}>
       <Handle type="target" position={Position.Left} />
       <div className="rf-node-title">{d.title}</div>
-      {effs.map((e, i) => (
-        <div key={i} className="flex gap-1 items-center mb-1">
-          <Combobox
-            className="flex-1"
-            value={String(e['do'] ?? '')}
-            options={d.verbs}
-            onChange={(v) => setRow(i, { do: v })}
-            placeholder="verb…"
-          />
-          <NumField value={Number(e['amount'] ?? e['count'] ?? 1)} onChange={(n) => setNum(i, n)} min={1} />
-          <button className="nodrag" type="button" onClick={() => del(i)} title="удалить">×</button>
-        </div>
-      ))}
-      <button className="nodrag" type="button" onClick={add}>+ эффект</button>
+      <EffectList
+        value={d.effects} onChange={d.onEffects} verbs={d.verbs} verbDefs={d.verbDefs}
+        targetGroups={d.targetGroups} locations={d.locations} targets={d.targets}
+        refOptions={d.refOptions} />
     </div>
   );
 }
@@ -141,6 +132,13 @@ export function EncounterFlow(
   );
 
   const graph = useMemo(() => {
+    // Справочники verb-манифеста для EffectList (поля/дропдауны). Внутри useMemo,
+    // чтобы захватились текущим meta (в deps добавлен meta).
+    const verbDefs = meta?.dsl?.verbs;
+    const targetGroups = meta?.dsl?.targetGroups;
+    const targets = meta?.dsl?.targets;
+    const locations = meta?.locations;
+    const refOptions = { condition: meta?.dsl?.conditions ?? [], skill: skills };
     const ePass = (id: string, s: string, t: string): Edge =>
       ({ id, source: s, sourceHandle: 'pass', target: t, animated: true, style: { stroke: '#4db870' } });
     const eFail = (id: string, s: string, t: string): Edge =>
@@ -157,7 +155,10 @@ export function EncounterFlow(
       effects: Eff[] | undefined, onEffects: (e: Eff[]) => void,
     ): Node => ({
       id, type: 'effects', position: { x, y }, draggable: false,
-      data: { title, accent, effects: effects ?? [], verbs, onEffects },
+      data: {
+        title, accent, effects: effects ?? [], verbs,
+        verbDefs, targetGroups, locations, targets, refOptions, onEffects,
+      },
     });
 
     // Ветвящаяся (gate/mystery): маршрут → ветка успеха/провала → их исходы.
@@ -202,7 +203,7 @@ export function EncounterFlow(
       return { nodes, edges: [ePass('e-ok', 'test', 'ok'), eFail('e-fail', 'test', 'fail')] };
     }
     return null;
-  }, [parsed, patch, skills, verbs]);
+  }, [parsed, patch, skills, verbs, meta]);
 
   // Внутреннее состояние графа: React Flow измеряет размеры узлов (нужно для
   // корректного fitView) и сохраняет их через onNodesChange. Пересинхронизируем

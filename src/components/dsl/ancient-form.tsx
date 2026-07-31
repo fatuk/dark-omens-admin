@@ -30,6 +30,10 @@ export function AncientForm(
   const listProps = {
     verbs, verbDefs: meta?.dsl?.verbs, targetGroups: meta?.dsl?.targetGroups,
     locations: meta?.locations, targets: meta?.dsl?.targets,
+    refOptions: {
+      condition: meta?.dsl?.conditions ?? [],
+      skill: meta?.dsl?.skills ?? [],
+    },
   };
 
   // NB: «Локации Тайн» у Древнего УБРАНЫ — их задаёт сама карта Тайны (поле «Локации»

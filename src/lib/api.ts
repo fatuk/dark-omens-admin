@@ -45,6 +45,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 export interface VerbParam {
   name: string;
   type: { t: string; values?: string[]; of?: string };
+  required?: boolean;
   default?: unknown;
 }
 export interface VerbDef {

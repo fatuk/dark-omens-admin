@@ -26,6 +26,9 @@ type Props = {
   targetGroups?: Record<string, string[]>;
   locations?: { id: string; name: string }[];
   targets?: string[];
+  // Справочники для ref-параметров (condition/skill/resource → дропдаун id).
+  // Ключ — RefKind из манифеста; значение — список допустимых id.
+  refOptions?: Record<string, string[]>;
   // Разрешить редактировать cost (цена опции) на листах. Включается для веток
   // choice — «заплати улику/рассудок, чтобы выбрать эту опцию» (как в картах Мифов).
   allowCost?: boolean;
@@ -35,7 +38,7 @@ const STRUCT = 'rounded border border-white/10 p-2 flex flex-col gap-1.5';
 const HEAD = 'flex items-center gap-2 text-xs uppercase tracking-wide opacity-70';
 
 export function EffectList(
-  { value, onChange, verbs, verbDefs, targetGroups, locations, targets, allowCost }: Props,
+  { value, onChange, verbs, verbDefs, targetGroups, locations, targets, refOptions, allowCost }: Props,
 ): JSX.Element {
   const effs = value ?? [];
   // Новый лист — только {do}. count/amount НЕ ставим по умолчанию: движок и так берёт 1,
@@ -55,6 +58,14 @@ export function EffectList(
     if (!d) return 'count'; // нет манифеста → дефолтный счётчик
     const p = d.params.find((q) => q.name === 'amount' || q.name === 'count');
     return p ? p.name : null;
+  };
+  // ref-параметры (condition/skill/resource/…) → дропдаун id из справочника.
+  const refParams = (verb: string): { name: string; of: string; required: boolean }[] => {
+    const d = defOf(verb);
+    if (!d) return [];
+    return d.params
+      .filter((p) => p.type.t === 'ref' && typeof p.type.of === 'string')
+      .map((p) => ({ name: p.name, of: String(p.type.of), required: Boolean(p.required) }));
   };
   // enum-параметры (scale/scope/…) → дженерик-селект.
   const enumParams = (verb: string): { name: string; values: string[] }[] => {
@@ -88,7 +99,8 @@ export function EffectList(
   // (ветка choice включает его → cost доступен и во вложенных group/forEach).
   const sub = (v: Eff[], on: (e: Eff[]) => void, ac: boolean = !!allowCost): JSX.Element => (
     <EffectList value={v} onChange={on} verbs={verbs} verbDefs={verbDefs}
-      targetGroups={targetGroups} locations={locations} targets={targets} allowCost={ac} />
+      targetGroups={targetGroups} locations={locations} targets={targets}
+      refOptions={refOptions} allowCost={ac} />
   );
 
   return (
@@ -218,6 +230,20 @@ export function EffectList(
                 {ep.values.map((v) => <option key={v} value={v}>{v}</option>)}
               </select>
             ))}
+            {refParams(verb).map((rp) => {
+              const opts = refOptions?.[rp.of];
+              return opts && opts.length > 0 ? (
+                <select key={rp.name} value={String(e[rp.name] ?? '')} title={rp.name}
+                  onChange={(ev) => patch(i, { [rp.name]: ev.target.value || undefined })}>
+                  <option value="">— {rp.name}{rp.required ? ' *' : ''} —</option>
+                  {opts.map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+              ) : (
+                <input key={rp.name} className="w-28" value={String(e[rp.name] ?? '')}
+                  placeholder={rp.name} title={rp.name}
+                  onChange={(ev) => patch(i, { [rp.name]: ev.target.value || undefined })} />
+              );
+            })}
             {showCount && (
               <NumField value={Number(e['amount'] ?? e['count'] ?? 1)} onChange={(n) => setNum(i, n)} min={1} />
             )}

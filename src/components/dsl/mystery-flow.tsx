@@ -68,13 +68,14 @@ interface OnEnterData extends Record<string, unknown> {
   targets?: string[];
   verbDefs?: Record<string, VerbDef>;
   targetGroups?: Record<string, string[]>;
+  refOptions?: Record<string, string[]>;
 }
 function OnEnterNode(props: NodeProps): JSX.Element {
   const d = props.data as unknown as OnEnterData;
   return (
     <div className="rf-node nodrag nopan" style={{ minWidth: 240 }}>
       <div className="rf-node-title">При активации (onEnter)</div>
-      <EffectList value={d.effects} onChange={d.onEffects} verbs={d.verbs} verbDefs={d.verbDefs} targetGroups={d.targetGroups} locations={d.locations} targets={d.targets} />
+      <EffectList value={d.effects} onChange={d.onEffects} verbs={d.verbs} verbDefs={d.verbDefs} targetGroups={d.targetGroups} locations={d.locations} targets={d.targets} refOptions={d.refOptions} />
     </div>
   );
 }
@@ -85,6 +86,7 @@ interface HookData extends Record<string, unknown> {
   targets?: string[];
   verbDefs?: Record<string, VerbDef>;
   targetGroups?: Record<string, string[]>;
+  refOptions?: Record<string, string[]>;
   onHook: (h: Hook) => void; onRemove: () => void;
 }
 function HookNode(props: NodeProps): JSX.Element {
@@ -147,7 +149,7 @@ function HookNode(props: NodeProps): JSX.Element {
       )}
 
       <label className="mt-1">Эффект</label>
-      <EffectList value={(h['effect'] as Eff[]) ?? []} onChange={(e) => set({ effect: e })} verbs={d.verbs} verbDefs={d.verbDefs} targetGroups={d.targetGroups} locations={d.locations} targets={d.targets} />
+      <EffectList value={(h['effect'] as Eff[]) ?? []} onChange={(e) => set({ effect: e })} verbs={d.verbs} verbDefs={d.verbDefs} targetGroups={d.targetGroups} locations={d.locations} targets={d.targets} refOptions={d.refOptions} />
     </div>
   );
 }
@@ -175,6 +177,7 @@ export function MysteryFlow(
   const targets = meta?.dsl?.targets;
   const verbDefs = meta?.dsl?.verbs;
   const targetGroups = meta?.dsl?.targetGroups;
+  const refOptions = { condition: meta?.dsl?.conditions ?? [], skill: skills };
 
   const graph = useMemo(() => {
     if (!parsed) return null;
@@ -188,13 +191,13 @@ export function MysteryFlow(
     const nodes: Node[] = [
       {
         id: 'onenter', type: 'onenter', position: { x: 0, y: -220 }, draggable: false,
-        data: { effects: (d['onEnter'] as Eff[]) ?? [], verbs, verbDefs, targetGroups, locations, targets, onEffects: (e: Eff[]) => patch({ ...d, onEnter: e }) },
+        data: { effects: (d['onEnter'] as Eff[]) ?? [], verbs, verbDefs, targetGroups, locations, targets, refOptions, onEffects: (e: Eff[]) => patch({ ...d, onEnter: e }) },
       },
     ];
     hooks.forEach((h, i) => nodes.push({
       id: `hook${i}`, type: 'hook', position: { x: 0, y: i * 400 }, draggable: false,
       data: {
-        hook: h, triggers, skills, verbs, verbDefs, targetGroups, locations, targets,
+        hook: h, triggers, skills, verbs, verbDefs, targetGroups, locations, targets, refOptions,
         onHook: (nh: Hook) => setHooks(hooks.map((x, j) => (j === i ? nh : x))),
         onRemove: () => setHooks(hooks.filter((_, j) => j !== i)),
       },
