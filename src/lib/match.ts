@@ -55,5 +55,5 @@ export function matchAxes(
   if (type === 'mythos' || type === 'mystery') {
     return { ancient: true, loc: false, location: false, world: false, act: false };
   }
-  return { ancient: false, loc: false, location: false, world: false, act: false }; // asset/artifact
+  return { ancient: false, loc: false, location: false, world: false, act: false };
 }

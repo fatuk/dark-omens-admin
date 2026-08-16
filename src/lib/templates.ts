@@ -33,14 +33,6 @@ export function dataTemplate(type: string, kind: string): Record<string, unknown
   }
   // Прочие типы — контракт ещё не зафиксирован в движке; даём провизорный скелет
   // под слоты Effect-DSL, чтобы было от чего отталкиваться.
-  if (type === 'asset' || type === 'artifact') {
-    return {
-      traits: ['item'],
-      passive: [{ do: 'rerollDice', count: 1, context: 'anyTest' }],
-      triggered: [],
-      action: null,
-    };
-  }
   if (type === 'mythos') {
     // Репрезентативный скелет боевой карты (не пустышка): канонический зачин
     // advanceOmen (двигает знамение И считает дум по вратам нового цвета) →

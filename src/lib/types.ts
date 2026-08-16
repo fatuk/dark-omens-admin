@@ -3,9 +3,12 @@
 export type Locale = 'en' | 'ru';
 export const LOCALES: Locale[] = ['en', 'ru'];
 
-// Виды контента (тип-агностичный CMS). Встречи есть сейчас; остальные — задел
-// под расширение (ассеты/артефакты/мифы/тайны). Добавишь сюда — появится в селектах.
-export const CONTENT_TYPES = ['encounter', 'mystery', 'mythos', 'asset', 'artifact', 'ancient'] as const;
+// Виды контента (тип-агностичный CMS). Добавишь сюда — появится в селектах.
+//
+// Активов и артефактов здесь НЕТ намеренно: это статические карточки, они живут
+// в data/assets.json игры, а не в корпусе. Записи прежних типов, если такие
+// остались, страница правки всё ещё открывает — селект подставляет им пункт «(?)».
+export const CONTENT_TYPES = ['encounter', 'mystery', 'mythos', 'ancient'] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
 
 // Виды встреч — РОВНО как в движке relay (encounter-prompt.ts):
@@ -15,16 +18,11 @@ export type ContentType = (typeof CONTENT_TYPES)[number];
 //   mystery  — встреча на локации активной Тайны  (двухфазная, ветки)
 export const ENCOUNTER_KINDS = ['general', 'research', 'gate', 'mystery'] as const;
 
-// Трейты активов/артефактов — из Effect-DSL relay (ASSET_TRAITS).
-export const ASSET_TRAITS = ['weapon', 'magical', 'item', 'tome', 'trinket', 'ally', 'service', 'relic'] as const;
-
-// Доступные «виды» зависят от типа. encounter — реальные виды движка; asset/
-// artifact — трейты; mythos — цвета карт Древнего ужаса; mystery — без под-вида.
+// Доступные «виды» зависят от типа. encounter — реальные виды движка;
+// mythos — цвета карт Древнего ужаса; mystery — без под-вида.
 // Пустой список ⇒ вид не применим (kind = '').
 export const KINDS_BY_TYPE: Record<string, readonly string[]> = {
   encounter: ENCOUNTER_KINDS,
-  asset:     ASSET_TRAITS,
-  artifact:  ASSET_TRAITS,
   mythos:    ['green', 'yellow', 'blue'],   // цвета карт Мифов (как в ДУ)
   mystery:   [],
   ancient:   [],
