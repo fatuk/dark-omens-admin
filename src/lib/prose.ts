@@ -2,7 +2,8 @@
 // assembleCard в relay:
 //   general / research → плоско: name, mainText, successText, failureText
 //   gate / mystery     → вложенно: name, stage1.{…}, successBranch.{…},
-//                        failureBranch.{…}, + otherWorld (только gate)
+//                        failureBranch.{…}
+// Иной мир врат прозой НЕ является — он задаётся осью (тег world:<name>).
 // Пути даются в точечной нотации ('stage1.mainText') — get/set ниже их раскрывают.
 
 export interface ProseField {
@@ -35,7 +36,11 @@ function branchGroup(prefix: string, title: string): ProseGroup {
   };
 }
 
-function twoStage(withOtherWorld: boolean): ProseGroup[] {
+// Иного мира здесь НЕТ намеренно: мир — это ось карточки (тег world:<name>,
+// выпадашка канонических миров в блоке подбора), а не проза. Пока он лежал среди
+// текстов, его переводили как текст — 11 карточек из 92 уехали с «Сон Азатота»,
+// «Прошлое», «Грядущее» вместо ключа, и игра не находила по ним арт мира.
+function twoStage(): ProseGroup[] {
   const groups: ProseGroup[] = [
     { fields: [{ path: 'name', label: 'Название', multiline: false }] },
     {
@@ -49,9 +54,6 @@ function twoStage(withOtherWorld: boolean): ProseGroup[] {
     branchGroup('successBranch', 'Ветка успеха — вторая проверка'),
     branchGroup('failureBranch', 'Ветка провала — вторая проверка'),
   ];
-  if (withOtherWorld) {
-    groups.push({ fields: [{ path: 'otherWorld', label: 'Иной мир (название)', multiline: false }] });
-  }
   return groups;
 }
 
@@ -90,8 +92,7 @@ const ANCIENT_PROSE: ProseGroup[] = [{
 /** Раскладка полей прозы под тип/вид. */
 export function proseSchema(type: string, kind: string): ProseGroup[] {
   if (type === 'encounter') {
-    if (kind === 'gate')    return twoStage(true);
-    if (kind === 'mystery') return twoStage(false);
+    if (kind === 'gate' || kind === 'mystery') return twoStage();
     return FLAT;
   }
   if (type === 'mystery') return MYSTERY_PROSE;
