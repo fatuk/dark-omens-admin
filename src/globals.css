@@ -42,6 +42,19 @@
   .primary { @apply bg-[#243018] border-[#3d5022] text-[#e9d39a]; }
   .danger { @apply text-danger; }
 
+  /* Индикатор долгих запросов: плавающая плашка снизу справа. Не перехватывает
+     клики — работать во время запроса никто не мешает. */
+  .loader {
+    @apply fixed bottom-5 right-5 z-50 pointer-events-none
+           flex items-center gap-2.5 px-3.5 py-2.5
+           bg-panel border border-line rounded-lg text-muted text-xs
+           shadow-lg shadow-black/40;
+  }
+  .loader-spinner {
+    @apply inline-block w-3.5 h-3.5 rounded-full border-2
+           border-line border-t-gold animate-spin;
+  }
+
   .badge { @apply inline-block px-2 py-px rounded-[10px] text-[11px] border border-line text-muted; }
   .badge.published { @apply text-green border-[#2e5a3a]; }
   .tag {

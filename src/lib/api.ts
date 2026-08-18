@@ -24,20 +24,46 @@ export function setAdminKey(v: string): void {
   localStorage.setItem(LS_KEY, v.trim());
 }
 
+// ── Счётчик запросов «в полёте» ───────────────────────────────────────────────
+// Считаем здесь, а не в React Query: часть вызовов идёт мимо неё напрямую
+// (List → «Копия», EncounterAnalysis → listContent), и лоадер их бы не увидел.
+
+let inflight = 0;
+const inflightSubs = new Set<() => void>();
+
+export function getInflight(): number {
+  return inflight;
+}
+
+export function subscribeInflight(fn: () => void): () => void {
+  inflightSubs.add(fn);
+  return () => inflightSubs.delete(fn);
+}
+
+function bumpInflight(delta: number): void {
+  inflight += delta;
+  for (const fn of inflightSubs) fn();
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(getApiBase() + path, {
-    ...init,
-    headers: {
-      'content-type': 'application/json',
-      'x-admin-key': getAdminKey(),
-      ...(init?.headers ?? {}),
-    },
-  });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error((body as { error?: string }).error || `HTTP ${res.status}`);
+  bumpInflight(1);
+  try {
+    const res = await fetch(getApiBase() + path, {
+      ...init,
+      headers: {
+        'content-type': 'application/json',
+        'x-admin-key': getAdminKey(),
+        ...(init?.headers ?? {}),
+      },
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error((body as { error?: string }).error || `HTTP ${res.status}`);
+    }
+    return body as T;
+  } finally {
+    bumpInflight(-1);
   }
-  return body as T;
 }
 
 // Дескриптор verb'а из verb-манифеста relay (src/api/verb-manifest.ts) — метаданные
