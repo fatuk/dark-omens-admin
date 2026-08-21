@@ -5,6 +5,7 @@ import {
   getMeta, listContent, getContent,
   createContent, updateContent, deleteContent,
   draftFields, translateFields,
+  listUsers, grantAccess, revokeAccess,
   type Meta,
 } from '@/lib/api';
 import type { ContentRecord } from '@/lib/types';
@@ -18,6 +19,7 @@ const keys = {
   meta: ['meta'] as const,
   list: (f: ListFilters) => ['content', 'list', f] as const,
   item: (id: string) => ['content', 'item', id] as const,
+  users: ['users'] as const,
 };
 
 // Справочники для селектов — кэшируем надолго, не критичны (retry: false).
@@ -59,4 +61,28 @@ export function useDraft() {
 }
 export function useTranslate() {
   return useMutation({ mutationFn: translateFields });
+}
+
+// ── Доступ к игре ─────────────────────────────────────────────────────────────
+// Мутации инвалидируют список: статус права меняется прямо в таблице, и без
+// этого строка осталась бы со старым значением до перезагрузки страницы.
+
+export function useUsers() {
+  return useQuery({ queryKey: keys.users, queryFn: listUsers });
+}
+
+export function useGrantAccess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { email: string; reason?: string }) => grantAccess(v.email, v.reason),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.users }),
+  });
+}
+
+export function useRevokeAccess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { email: string; reason?: string }) => revokeAccess(v.email, v.reason),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.users }),
+  });
 }

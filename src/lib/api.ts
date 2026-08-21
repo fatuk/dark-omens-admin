@@ -148,3 +148,39 @@ export function translateFields(input: {
 }): Promise<{ fields: LocaleText }> {
   return req(`/admin/content/translate`, { method: 'POST', body: JSON.stringify(input) });
 }
+
+// ── Доступ к игре (права) ─────────────────────────────────────────────────────
+// Источник правды — таблица licenses в relay. Пока продаж на itch нет, права
+// выдаются руками с этой страницы (source: 'manual').
+
+export interface UserLicenseRow {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: number;
+  source: 'itch' | 'steam' | 'manual' | null;
+  sourceId: string | null;
+  status: 'active' | 'revoked' | null;
+  grantedAt: number | null;
+  revokedAt: number | null;
+  reason: string | null;
+}
+
+/** enforced=false — принуждение выключено, играют все независимо от прав. */
+export function listUsers(): Promise<{ enforced: boolean; users: UserLicenseRow[] }> {
+  return req(`/admin/licenses`);
+}
+
+export function grantAccess(email: string, reason = ''): Promise<{ ok: boolean }> {
+  return req(`/admin/licenses/grant`, {
+    method: 'POST',
+    body: JSON.stringify({ email, source: 'manual', reason }),
+  });
+}
+
+export function revokeAccess(email: string, reason = ''): Promise<{ ok: boolean }> {
+  return req(`/admin/licenses/revoke`, {
+    method: 'POST',
+    body: JSON.stringify({ email, reason }),
+  });
+}

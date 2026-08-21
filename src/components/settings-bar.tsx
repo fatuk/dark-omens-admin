@@ -25,6 +25,7 @@ export function SettingsBar() {
       <span className="title">DARK OMENS · CONTENT</span>
       <Link to="/">Список</Link>
       <Link to="/edit/new">+ Новая</Link>
+      <Link to="/users">Доступ</Link>
       <span className="spacer" />
       <input
         value={base}

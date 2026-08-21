@@ -7,6 +7,7 @@ import './globals.css';
 import { Layout } from './App';
 import { ListPage } from './pages/List';
 import { EditPage } from './pages/Edit';
+import { UsersPage } from './pages/Users';
 import { ToastProvider } from './components/toast';
 
 // SPA-роутинг. /edit/new — создание, /edit/:id — правка (id может быть 'new').
@@ -17,6 +18,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <ListPage /> },
       { path: 'edit/:id', element: <EditPage /> },
+      { path: 'users', element: <UsersPage /> },
     ],
   },
 ]);
