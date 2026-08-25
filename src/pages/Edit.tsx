@@ -215,6 +215,19 @@ export function EditPage() {
             <option value="published">published</option>
           </select>
         </div>
+
+        <div>
+          {/* Сезон — ось ДОСТУПНОСТИ, поэтому стоит рядом со статусом, а не в
+              «контексте выборки»: и то и другое отвечает на вопрос «когда эта
+              карточка доедет до игрока». Пусто = в игру не попадёт. */}
+          <label>Сезон</label>
+          <select value={m.season} onChange={(e) => setMatch({ season: e.target.value })}>
+            <option value="">— не размечено (недоступно) —</option>
+            {meta?.seasons?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {m.season && !meta?.seasons?.some((s) => s.id === m.season) &&
+              <option value={m.season}>{m.season} (?)</option>}
+          </select>
+        </div>
         {rec.type === 'ancient' && (
           <div>
             <label>ID / slug{!isNew && ' (фиксирован)'}</label>

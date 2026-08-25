@@ -89,6 +89,8 @@ export interface Meta {
   locations: { id: string; name: string; nameEn: string; type: string }[];
   locationTypes: string[];
   otherWorlds: string[];
+  /** Сезоны выпуска — ось доступности, хранится тегом season:<id>. */
+  seasons: { id: string; name: string }[];
   encounterKinds: string[];
   skills: string[];
   dsl?: {

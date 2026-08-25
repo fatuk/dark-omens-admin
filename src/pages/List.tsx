@@ -126,6 +126,15 @@ export function ListPage() {
           </select>
         </div>
         <div>
+          {/* Пустой сезон — не «любой», а именно неразмеченные: их надо видеть,
+              иначе контент молча не доедет до игроков. */}
+          <label>Сезон</label>
+          <select value={filters.season ?? ''} onChange={(e) => set({ season: e.target.value })}>
+            <option value="">— любой —</option>
+            {meta?.seasons?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </div>
+        <div>
           <label>Акт</label>
           <select value={filters.act ?? ''} onChange={(e) => set({ act: e.target.value })}>
             <option value="">— любой —</option>
