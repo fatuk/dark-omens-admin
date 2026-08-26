@@ -73,6 +73,8 @@ export function InvestigatorForm(
   const skills = (d['skills'] && typeof d['skills'] === 'object' ? d['skills'] as Obj : {});
   const roles = Array.isArray(d['role']) ? (d['role'] as string[]) : [];
   const items = Array.isArray(d['startingItems']) ? (d['startingItems'] as Obj[]) : [];
+  const tickets = (d['startingTickets'] && typeof d['startingTickets'] === 'object'
+    ? d['startingTickets'] as Obj : {});
   const ability = (d['ability'] && typeof d['ability'] === 'object' ? d['ability'] as Obj : null);
   const passive = (d['passive'] && typeof d['passive'] === 'object' ? d['passive'] as Obj : null);
 
@@ -142,9 +144,13 @@ export function InvestigatorForm(
 
       <div className="prose-group">
         <div className="prose-group-title">Навыки</div>
+        {/* Пять навыков обязаны стоять одной строкой: это одна характеристика,
+            разбитая на пять чисел, и перенос ломает чтение. Общий .row даёт
+            каждому полю basis 160px и max 280px — впятером они переносятся,
+            поэтому здесь доли равные и без максимума. */}
         <div className="row">
           {SKILLS.map((s) => (
-            <div key={s}>
+            <div key={s} style={{ flex: '1 1 0', minWidth: 0, maxWidth: 'none' }}>
               <label>{SKILL_RU[s]}</label>
               <input
                 type="number" min={1} max={6}
@@ -210,6 +216,30 @@ export function InvestigatorForm(
           );
         })}
         <button onClick={() => patchItem(items.length, { asset: '' })}>+ предмет</button>
+
+        {/* Билеты — ОТДЕЛЬНОЕ поле startingTickets: {train, ship}, а не элемент
+            списка. Положить их в startingItems значило бы записать то, что игра
+            не читает (см. _starting_ticket_count в game_state.gd). */}
+        <div className="row" style={{ marginTop: 10 }}>
+          {(['train', 'ship'] as const).map((kind) => (
+            <div key={kind} style={{ flex: '1 1 0', minWidth: 0, maxWidth: 'none' }}>
+              <label>{kind === 'train' ? 'Билеты на поезд' : 'Билеты на корабль'}</label>
+              <input
+                type="number" min={0} max={4}
+                value={Number(tickets[kind] ?? 0)}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  const t: Obj = { ...tickets };
+                  if (n > 0) t[kind] = n; else delete t[kind];
+                  const nd = { ...d };
+                  if (Object.keys(t).length) nd['startingTickets'] = t;
+                  else delete nd['startingTickets'];
+                  patch(nd);
+                }}
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="prose-group">
