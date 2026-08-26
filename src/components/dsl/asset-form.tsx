@@ -82,8 +82,9 @@ export function AssetForm(
   };
 
   return (
-    <div className="rf">
-      <div className="row">
+    <div className="dsl-form">
+      <div className="prose-group">
+        <div className="row">
         <div>
           <label>Стоимость</label>
           <input
@@ -106,10 +107,11 @@ export function AssetForm(
             {(meta?.dsl?.skills ?? []).map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
+        </div>
       </div>
 
-      <div className="rf-section">
-        <div className="rf-title">Трейты</div>
+      <div className="prose-group">
+        <div className="prose-group-title">Трейты</div>
         <div className="row" style={{ gap: 4, flexWrap: 'wrap' }}>
           {TRAITS.map((t) => (
             <button
@@ -123,8 +125,8 @@ export function AssetForm(
         </div>
       </div>
 
-      <div className="rf-section">
-        <div className="rf-title">Пассив — пока карта на руках (whileOwned)</div>
+      <div className="prose-group">
+        <div className="prose-group-title">Пассив — пока карта на руках (whileOwned)</div>
         <EffectList
           {...listProps}
           value={asList('whileOwned')}
@@ -132,8 +134,8 @@ export function AssetForm(
         />
       </div>
 
-      <div className="rf-section">
-        <div className="rf-title">Действие — активируется игроком (action)</div>
+      <div className="prose-group">
+        <div className="prose-group-title">Действие — активируется игроком (action)</div>
         <EffectList
           {...listProps}
           value={asList('action')}
@@ -141,8 +143,8 @@ export function AssetForm(
         />
       </div>
 
-      <div className="rf-section">
-        <div className="rf-title">Реакция на событие (triggered)</div>
+      <div className="prose-group">
+        <div className="prose-group-title">Реакция на событие (triggered)</div>
         <div className="row">
           <div>
             <label>Событие</label>

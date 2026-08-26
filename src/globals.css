@@ -152,6 +152,11 @@
 
   /* Конструкторы-формы (Тайна/Мифы/Древний) — заполняют панель механики и скроллятся */
   .dsl-form { @apply flex-1 min-h-0 overflow-auto pr-1; }
+  /* Секции конструктора крупнее, чем у прозы: в них вложены списки эффектов со
+     своими кнопками, и при 6px они слипаются в сплошную стену. Правило узкое —
+     только внутри панели механики, чтобы не разгонять остальные экраны. */
+  .mech-body .prose-group { @apply my-5; }
+  .mech-body .prose-group + .prose-group { @apply pt-5; }
   .hook-card { @apply border border-line rounded-md p-2.5 my-2 bg-white/[.02]; }
   .ancient-deck th, .ancient-deck td { @apply text-center px-2; }
 }
