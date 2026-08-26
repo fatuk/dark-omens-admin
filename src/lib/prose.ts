@@ -137,11 +137,16 @@ function keysIn(node: unknown, out: string[] = []): string[] {
  */
 export function catalogProse(data: unknown, type: string): ProseGroup[] {
   const prefix = type === 'investigator' ? 'INV_' : `${type.toUpperCase()}_`;
-  const fields: ProseField[] = keysIn(data).map((key) => ({
-    path: key,
-    label: `${labelForKey(key, prefix)}  ·  ${key}`,
-    multiline: !/_(NAME|OCC|TITLE)$/.test(key),
-  }));
+  const fields: ProseField[] = keysIn(data).map((key) => {
+    const human = labelForKey(key, prefix);
+    // Подпись не угадалась (ключ чужого префикса, напр. RECK_*) — показываем
+    // только сам ключ, а не `KEY · KEY`.
+    return {
+      path: key,
+      label: human === key ? key : `${human}  ·  ${key}`,
+      multiline: !/_(NAME|OCC|TITLE)$/.test(key),
+    };
+  });
   return fields.length ? [{ fields }] : [];
 }
 

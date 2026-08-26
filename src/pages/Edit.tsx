@@ -13,6 +13,8 @@ import {
 import { splitTags, joinTags, matchAxes, type MatchTags } from '@/lib/match';
 import { AutoTextarea } from '@/components/auto-textarea';
 import { AssetForm } from '@/components/dsl/asset-form';
+import { MonsterForm } from '@/components/dsl/monster-form';
+import { SpellForm } from '@/components/dsl/spell-form';
 import { EncounterFlow } from '@/components/dsl/encounter-flow';
 import { MysteryFlow } from '@/components/dsl/mystery-flow';
 import { MythosForm } from '@/components/dsl/mythos-form';
@@ -366,10 +368,10 @@ export function EditPage() {
       <section className="section mech-panel">
       <div className="section-title">Механика</div>
       {(() => {
-        // Конструктор есть только у типов со своей формой. Каталоги без формы
-        // (investigator/spell/monster) правятся сырым JSON — лучше честно не
-        // показывать вкладку, чем открыть пустой или чужой конструктор.
-        const canBuild = ['encounter', 'mystery', 'mythos', 'ancient', 'asset'].includes(rec.type);
+        // Конструктор есть только у типов со своей формой. Сыщик пока без неё
+        // (правится сырым JSON) — лучше честно не показывать вкладку, чем
+        // открыть пустой или чужой конструктор.
+        const canBuild = ['encounter', 'mystery', 'mythos', 'ancient', 'asset', 'monster', 'spell'].includes(rec.type);
         const view = canBuild ? mechView : 'json';
         return (
           <>
@@ -408,6 +410,10 @@ export function EditPage() {
                       ? <AncientForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
                     : rec.type === 'asset'
                       ? <AssetForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
+                    : rec.type === 'monster'
+                      ? <MonsterForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
+                    : rec.type === 'spell'
+                      ? <SpellForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
                       // У каталогов (investigator/asset/spell/monster) своей формы
                       // пока нет. Раньше сюда проваливался AncientForm и рисовал
                       // чужие поля — лучше честный JSON, чем неверная форма.

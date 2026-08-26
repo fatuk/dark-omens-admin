@@ -1,0 +1,212 @@
+// Конструктор заклинания: лицо карты (front) и её обороты (backs).
+//
+// Устройство не такое, как у актива. У заклинания две стороны: ЛИЦО — что оно
+// делает при касте, и ОБОРОТ — чем это обходится. Оборот тянется случайно при
+// каждом касте (SpellCatalog.random_back), поэтому их несколько, и у каждого
+// ярусы по числу успехов: `on` вида "0", "1+", "0-1", "2+".
+//
+// Тексты (название, описание способности, тексты оборотов) правятся в панели
+// «Тексты» — здесь они живут ключами перевода.
+import { useMemo } from 'react';
+import type { Meta } from '@/lib/api';
+import { EffectList } from '@/components/dsl/effect-list';
+
+type Obj = Record<string, unknown>;
+type Eff = Record<string, unknown>;
+
+const SUBTYPES = [
+  { value: 'ritual', label: 'Ритуал' },
+  { value: 'incantation', label: 'Заклятие' },
+  { value: 'glamour', label: 'Чары (аура)' },
+];
+
+/** Когда заклинание разыгрывается. Список движковый (SpellFlow). */
+const TRIGGERS = [
+  { value: 'action', label: 'Действием' },
+  { value: 'combatEncounter', label: 'В боевой встрече' },
+  { value: 'exhaust', label: 'Истощением' },
+  { value: 'onRest', label: 'На отдыхе' },
+];
+
+const TRAITS = ['magical', 'spell', 'ritual', 'blessing', 'curse'];
+
+export function SpellForm(
+  { value, onChange, meta }: { value: string; onChange: (json: string) => void; meta?: Meta },
+): JSX.Element {
+  const parsed = useMemo<Obj | null>(() => {
+    try {
+      const o: unknown = JSON.parse(value);
+      return o && typeof o === 'object' && !Array.isArray(o) ? (o as Obj) : null;
+    } catch { return null; }
+  }, [value]);
+
+  if (!parsed) return <div className="rf-note">Невалидный JSON — правь во вкладке «JSON».</div>;
+
+  const d = parsed;
+  const patch = (next: Obj): void => onChange(JSON.stringify(next, null, 2));
+  const skills = meta?.dsl?.skills ?? [];
+  const front = (d['front'] && typeof d['front'] === 'object' ? d['front'] as Obj : {});
+  const patchFront = (field: string, v: unknown): void => {
+    const next: Obj = { ...front };
+    if (v === '' || v === null) delete next[field]; else next[field] = v;
+    patch({ ...d, front: next });
+  };
+
+  const traits = Array.isArray(d['traits']) ? (d['traits'] as string[]) : [];
+  const listProps = {
+    verbs: [...(meta?.dsl?.actionVerbs ?? [])].sort(),
+    verbDefs: meta?.dsl?.verbs,
+    targetGroups: meta?.dsl?.targetGroups,
+    locations: meta?.locations,
+    targets: meta?.dsl?.targets,
+    refOptions: { condition: meta?.dsl?.conditions ?? [], skill: skills },
+  };
+
+  const backs = Array.isArray(d['backs']) ? (d['backs'] as Obj[]) : [];
+  const patchBacks = (list: Obj[]): void => {
+    const next = { ...d };
+    if (list.length) next['backs'] = list; else delete next['backs'];
+    patch(next);
+  };
+  const patchBack = (i: number, b: Obj | null): void => {
+    const list = backs.slice();
+    if (b) list[i] = b; else list.splice(i, 1);
+    patchBacks(list);
+  };
+
+  // Чары (glamour) работают аурой, а не броском: у них вместо onPass — aura.
+  const isGlamour = String(d['subtype'] ?? '') === 'glamour';
+
+  return (
+    <div className="dsl-form">
+      <div className="prose-group">
+        <div className="row">
+          <div>
+            <label>Вид</label>
+            <select
+              value={String(d['subtype'] ?? 'ritual')}
+              onChange={(e) => patch({ ...d, subtype: e.target.value })}
+            >
+              {SUBTYPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="row" style={{ gap: 4, flexWrap: 'wrap', marginTop: 8 }}>
+          {TRAITS.map((t) => (
+            <button
+              key={t}
+              className={traits.includes(t) ? 'primary' : ''}
+              onClick={() => patch({
+                ...d,
+                traits: traits.includes(t) ? traits.filter((x) => x !== t) : [...traits, t],
+              })}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="prose-group">
+        <div className="prose-group-title">Лицо — что делает при касте</div>
+        <div className="row">
+          <div>
+            <label>Разыгрывается</label>
+            <select
+              value={String(front['trigger'] ?? 'action')}
+              onChange={(e) => patchFront('trigger', e.target.value)}
+            >
+              {TRIGGERS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label>Проверка</label>
+            <select
+              value={String(front['test'] ?? '')}
+              onChange={(e) => patchFront('test', e.target.value)}
+            >
+              <option value="">— без броска —</option>
+              {skills.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label>Модификатор</label>
+            <input
+              type="number" min={-5} max={5}
+              value={Number(front['modifier'] ?? 0)}
+              onChange={(e) => patchFront('modifier', Number(e.target.value))}
+            />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 8 }}>
+          <div className="prose-group-title">
+            {isGlamour ? 'Аура — действует, пока карта в игре' : 'При успехе (onPass)'}
+          </div>
+          <EffectList
+            {...listProps}
+            value={(Array.isArray(front[isGlamour ? 'aura' : 'onPass'])
+              ? front[isGlamour ? 'aura' : 'onPass'] as Eff[] : [])}
+            onChange={(l) => patchFront(isGlamour ? 'aura' : 'onPass', l.length ? l : null)}
+          />
+        </div>
+      </div>
+
+      <div className="prose-group">
+        <div className="prose-group-title">
+          Обороты — цена каста. Тянется случайный, ярус выбирается по числу успехов
+        </div>
+        {backs.length === 0 && <div className="rf-note">Оборотов нет — каст без последствий.</div>}
+        {backs.map((b, i) => {
+          const tiers = Array.isArray(b['tiers']) ? (b['tiers'] as Obj[]) : [];
+          const patchTier = (ti: number, t: Obj | null): void => {
+            const list = tiers.slice();
+            if (t) list[ti] = t; else list.splice(ti, 1);
+            patchBack(i, { ...b, tiers: list });
+          };
+          return (
+            <div key={String(b['id'] ?? i)} className="dsl-subform">
+              <div className="row">
+                <div>
+                  <label>Идентификатор оборота</label>
+                  <input
+                    value={String(b['id'] ?? '')}
+                    onChange={(e) => patchBack(i, { ...b, id: e.target.value })}
+                  />
+                </div>
+                <button className="danger" onClick={() => patchBack(i, null)}>Удалить оборот</button>
+              </div>
+              {tiers.map((t, ti) => (
+                <div key={ti} style={{ marginTop: 8 }}>
+                  <div className="row">
+                    <div>
+                      <label>Успехов</label>
+                      {/* Формат движковый: "0", "1+", "0-1", "2+". */}
+                      <input
+                        value={String(t['on'] ?? '')}
+                        placeholder="0 / 1+ / 0-1"
+                        onChange={(e) => patchTier(ti, { ...t, on: e.target.value })}
+                      />
+                    </div>
+                    <button onClick={() => patchTier(ti, null)}>Удалить ярус</button>
+                  </div>
+                  <EffectList
+                    {...listProps}
+                    value={Array.isArray(t['effect']) ? (t['effect'] as Eff[]) : []}
+                    onChange={(l) => patchTier(ti, { ...t, effect: l })}
+                  />
+                </div>
+              ))}
+              <button onClick={() => patchBack(i, { ...b, tiers: [...tiers, { on: '', effect: [] }] })}>
+                + ярус
+              </button>
+            </div>
+          );
+        })}
+        <button onClick={() => patchBacks([...backs, { id: '', text: '', tiers: [] }])}>
+          + оборот
+        </button>
+      </div>
+    </div>
+  );
+}
