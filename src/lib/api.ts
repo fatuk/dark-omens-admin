@@ -166,23 +166,28 @@ export interface UserLicenseRow {
   grantedAt: number | null;
   revokedAt: number | null;
   reason: string | null;
+  /** Сезоны, которыми владеет пользователь (без базовой игры). */
+  seasons: string[];
 }
 
 /** enforced=false — принуждение выключено, играют все независимо от прав. */
-export function listUsers(): Promise<{ enforced: boolean; users: UserLicenseRow[] }> {
+export function listUsers(): Promise<{
+  enforced: boolean; users: UserLicenseRow[]; seasons: { id: string; name: string }[];
+}> {
   return req(`/admin/licenses`);
 }
 
-export function grantAccess(email: string, reason = ''): Promise<{ ok: boolean }> {
+/** product: 'game' — базовая игра (по умолчанию), иначе id сезона. */
+export function grantAccess(email: string, reason = '', product = 'game'): Promise<{ ok: boolean }> {
   return req(`/admin/licenses/grant`, {
     method: 'POST',
-    body: JSON.stringify({ email, source: 'manual', reason }),
+    body: JSON.stringify({ email, source: 'manual', reason, product }),
   });
 }
 
-export function revokeAccess(email: string, reason = ''): Promise<{ ok: boolean }> {
+export function revokeAccess(email: string, reason = '', product = 'game'): Promise<{ ok: boolean }> {
   return req(`/admin/licenses/revoke`, {
     method: 'POST',
-    body: JSON.stringify({ email, reason }),
+    body: JSON.stringify({ email, reason, product }),
   });
 }

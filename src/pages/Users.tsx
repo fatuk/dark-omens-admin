@@ -56,6 +56,18 @@ export function UsersPage() {
     }
   }
 
+  async function onToggleSeason(u: UserLicenseRow, product: string, owned: boolean) {
+    // Отзыв сезона сессию НЕ рвёт (в отличие от базы), поэтому и подтверждения
+    // не спрашиваем: цена ошибки — один клик обратно.
+    try {
+      if (owned) await revoke.mutateAsync({ email: u.email, product, reason: 'сезон снят вручную' });
+      else await grant.mutateAsync({ email: u.email, product });
+      toast.success(`${owned ? 'Снят' : 'Выдан'} сезон ${product}: ${u.email}`);
+    } catch (e) {
+      toast.error(String((e as Error).message));
+    }
+  }
+
   if (isLoading) return <div className="container">Загрузка…</div>;
   if (error) return <div className="container danger">{String((error as Error).message)}</div>;
 
@@ -87,6 +99,7 @@ export function UsersPage() {
             <th>Имя</th>
             <th>Регистрация</th>
             <th>Доступ</th>
+            <th>Сезоны</th>
             <th>Источник</th>
             <th>Причина</th>
             <th />
@@ -99,6 +112,25 @@ export function UsersPage() {
               <td>{u.name}</td>
               <td>{fmtDate(u.createdAt)}</td>
               <td><AccessBadge row={u} /></td>
+              <td>
+                {/* Сезоны независимы от базы: право на сезон НЕ даёт права на
+                    игру, поэтому переключаются отдельно от кнопки доступа. */}
+                <div className="row" style={{ gap: 4, flexWrap: 'wrap' }}>
+                  {(data?.seasons ?? []).map((s) => {
+                    const owned = u.seasons?.includes(s.id) ?? false;
+                    return (
+                      <button
+                        key={s.id}
+                        className={owned ? 'primary' : ''}
+                        title={s.name}
+                        onClick={() => void onToggleSeason(u, s.id, owned)}
+                      >
+                        {s.id}
+                      </button>
+                    );
+                  })}
+                </div>
+              </td>
               <td>{u.source ?? '—'}</td>
               <td>{u.reason || '—'}</td>
               <td className="text-right whitespace-nowrap">
@@ -111,7 +143,7 @@ export function UsersPage() {
             </tr>
           ))}
           {rows.length === 0 && (
-            <tr><td colSpan={7}>Никого не нашлось.</td></tr>
+            <tr><td colSpan={8}>Никого не нашлось.</td></tr>
           )}
         </tbody>
       </table>

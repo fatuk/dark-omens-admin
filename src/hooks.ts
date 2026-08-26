@@ -74,7 +74,8 @@ export function useUsers() {
 export function useGrantAccess() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { email: string; reason?: string }) => grantAccess(v.email, v.reason),
+    mutationFn: (v: { email: string; reason?: string; product?: string }) =>
+      grantAccess(v.email, v.reason, v.product),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.users }),
   });
 }
@@ -82,7 +83,8 @@ export function useGrantAccess() {
 export function useRevokeAccess() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { email: string; reason?: string }) => revokeAccess(v.email, v.reason),
+    mutationFn: (v: { email: string; reason?: string; product?: string }) =>
+      revokeAccess(v.email, v.reason, v.product),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.users }),
   });
 }
