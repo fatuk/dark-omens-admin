@@ -12,6 +12,7 @@ import {
 } from '@/lib/prose';
 import { splitTags, joinTags, matchAxes, type MatchTags } from '@/lib/match';
 import { AutoTextarea } from '@/components/auto-textarea';
+import { AssetForm } from '@/components/dsl/asset-form';
 import { EncounterFlow } from '@/components/dsl/encounter-flow';
 import { MysteryFlow } from '@/components/dsl/mystery-flow';
 import { MythosForm } from '@/components/dsl/mythos-form';
@@ -144,7 +145,7 @@ export function EditPage() {
     try {
       const { fields } = await draftMut.mutateAsync({
         type: rec.type, kind: rec.kind, tags: rec.tags,
-        fields: prosePaths(rec.type, rec.kind), language: locale, mechanics,
+        fields: prosePaths(rec.type, rec.kind, rec.data), language: locale, mechanics,
         brief: brief.trim() || undefined,
       });
       setRec((r) => ({ ...r, i18n: { ...r.i18n, [locale]: setMany(r.i18n[locale] ?? {}, fields) } }));
@@ -338,7 +339,7 @@ export function EditPage() {
         />
       </div>
 
-      {proseSchema(rec.type, rec.kind).map((group, gi) => (
+      {proseSchema(rec.type, rec.kind, rec.data).map((group, gi) => (
         <div key={gi} className="prose-group">
           {group.title && <div className="prose-group-title">{group.title}</div>}
           {group.fields.map((f) => (
@@ -365,7 +366,10 @@ export function EditPage() {
       <section className="section mech-panel">
       <div className="section-title">Механика</div>
       {(() => {
-        const canBuild = ['encounter', 'mystery', 'mythos', 'ancient'].includes(rec.type);
+        // Конструктор есть только у типов со своей формой. Каталоги без формы
+        // (investigator/spell/monster) правятся сырым JSON — лучше честно не
+        // показывать вкладку, чем открыть пустой или чужой конструктор.
+        const canBuild = ['encounter', 'mystery', 'mythos', 'ancient', 'asset'].includes(rec.type);
         const view = canBuild ? mechView : 'json';
         return (
           <>
@@ -402,6 +406,8 @@ export function EditPage() {
                     ? <MythosForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
                     : rec.type === 'ancient'
                       ? <AncientForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
+                    : rec.type === 'asset'
+                      ? <AssetForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
                       // У каталогов (investigator/asset/spell/monster) своей формы
                       // пока нет. Раньше сюда проваливался AncientForm и рисовал
                       // чужие поля — лучше честный JSON, чем неверная форма.

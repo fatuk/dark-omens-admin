@@ -79,11 +79,37 @@ export function dataTemplate(type: string, kind: string): Record<string, unknown
     return {
       act: 1,
       solveCondition: { kind: 'cluesOnCard', n: 6 },
+      // Триггер из живых (MYSTERY_TRIGGERS в relay): researchEncounterResolved
+      // и прочие были выкинуты — движок их не вызывает, карточка с ними молча
+      // не сработала бы.
       progressHook: {
-        trigger: 'researchEncounterResolved',
-        effect: [{ do: 'placeClue', count: 1 }],
+        trigger: 'encounterAtEldritchToken',
+        effect: [{ do: 'placeEldritchToken', where: 'self' }],
       },
       onEnter: [],
+    };
+  }
+  // Каталоги игры. Без своей заготовки сюда возвращалось {} — и «↻ Шаблон»
+  // стирал карточку целиком, а не заменял её стартовой формой.
+  if (type === 'asset') {
+    return { nameKey: '', season: '', cost: 1, traits: ['item'], abilityKey: '', effect: {} };
+  }
+  if (type === 'spell') {
+    return { name: '', subtype: 'ritual', season: '', traits: ['magical', 'spell'], front: {}, backs: [] };
+  }
+  if (type === 'monster') {
+    return {
+      nameKey: '', season: '', toughness: 2,
+      horror: { skill: 'will', modifier: 0, damage: 1 },
+      combat: { skill: 'strength', modifier: 0, damage: 1 },
+    };
+  }
+  if (type === 'investigator') {
+    return {
+      name: '', displayName: '', occupation: '', season: '',
+      health: 5, sanity: 5, startingLocation: '',
+      skills: { lore: 1, influence: 1, observation: 1, strength: 1, will: 1 },
+      startingItems: [],
     };
   }
   return {};

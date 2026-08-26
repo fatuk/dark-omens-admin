@@ -90,7 +90,63 @@ const ANCIENT_PROSE: ProseGroup[] = [{
 }];
 
 /** Раскладка полей прозы под тип/вид. */
-export function proseSchema(type: string, kind: string): ProseGroup[] {
+/** Типы-каталоги: тексты лежат НЕ по фиксированным полям, а по ключам перевода. */
+const CATALOG_TYPES = new Set(['investigator', 'asset', 'spell', 'monster']);
+
+/** Ключ перевода в данных карточки: ASSET_VAMPIRIC_TALISMAN_NAME. */
+const KEY_RE = /^[A-Z][A-Z0-9_]{3,}$/;
+
+/** Человеческая подпись по хвосту ключа; нет в словаре — покажем сам хвост. */
+const KEY_LABELS: Record<string, string> = {
+  NAME: 'Название', ABILITY: 'Способность', OCC: 'Профессия', QUOTE: 'Цитата',
+  DESC: 'Описание', TITLE: 'Заголовок', TEXT: 'Текст', FLAVOR: 'Атмосфера',
+  PASSIVE: 'Пассив', ACTION: 'Действие', BACK: 'Оборот', FRONT: 'Лицо',
+};
+
+function labelForKey(key: string, prefix: string): string {
+  const tail = key.startsWith(prefix) ? key.slice(prefix.length) : key;
+  const parts = tail.split('_').filter(Boolean);
+  for (let i = 0; i < parts.length; i++) {
+    const guess = parts.slice(i).join('_');
+    if (KEY_LABELS[guess]) return KEY_LABELS[guess];
+  }
+  return tail || key;
+}
+
+/** Все ключи перевода, встречающиеся в данных карточки (в порядке обхода). */
+function keysIn(node: unknown, out: string[] = []): string[] {
+  if (typeof node === 'string') {
+    if (KEY_RE.test(node) && !out.includes(node)) out.push(node);
+    return out;
+  }
+  if (Array.isArray(node)) { for (const v of node) keysIn(v, out); return out; }
+  if (node && typeof node === 'object') {
+    for (const v of Object.values(node as Record<string, unknown>)) keysIn(v, out);
+  }
+  return out;
+}
+
+/**
+ * Поля прозы для карточки-каталога: по одному на ключ перевода из её данных.
+ *
+ * Статической схемой это не выразить — ключи у каждой записи свои
+ * (ASSET_VAMPIRIC_TALISMAN_NAME), и придумывать их за автора нельзя. Поэтому
+ * читаем сами данные: что в них названо ключом, то и редактируем.
+ *
+ * Многострочность по длине хвоста: NAME/OCC — строка, ABILITY/QUOTE — абзац.
+ */
+export function catalogProse(data: unknown, type: string): ProseGroup[] {
+  const prefix = type === 'investigator' ? 'INV_' : `${type.toUpperCase()}_`;
+  const fields: ProseField[] = keysIn(data).map((key) => ({
+    path: key,
+    label: `${labelForKey(key, prefix)}  ·  ${key}`,
+    multiline: !/_(NAME|OCC|TITLE)$/.test(key),
+  }));
+  return fields.length ? [{ fields }] : [];
+}
+
+export function proseSchema(type: string, kind: string, data?: unknown): ProseGroup[] {
+  if (CATALOG_TYPES.has(type)) return catalogProse(data, type);
   if (type === 'encounter') {
     if (kind === 'gate' || kind === 'mystery') return twoStage();
     return FLAT;
@@ -103,8 +159,8 @@ export function proseSchema(type: string, kind: string): ProseGroup[] {
 }
 
 /** Все пути полей для (type, kind) — для запроса рыбы у LLM. */
-export function prosePaths(type: string, kind: string): string[] {
-  return proseSchema(type, kind).flatMap((g) => g.fields.map((f) => f.path));
+export function prosePaths(type: string, kind: string, data?: unknown): string[] {
+  return proseSchema(type, kind, data).flatMap((g) => g.fields.map((f) => f.path));
 }
 
 // ── Вложенный доступ по точечному пути ────────────────────────────────────────────
