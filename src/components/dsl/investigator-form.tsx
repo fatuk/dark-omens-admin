@@ -202,14 +202,31 @@ export function InvestigatorForm(
                 </select>
               </div>
               <div>
-                <label>{isCount ? 'Сколько' : 'Идентификатор'}</label>
-                <input
-                  type={isCount ? 'number' : 'text'}
-                  value={isCount ? Number(val ?? 1) : String(val ?? '')}
-                  onChange={(e) => patchItem(i, {
-                    [kind]: isCount ? Number(e.target.value) : e.target.value,
-                  })}
-                />
+                <label>{isCount ? 'Сколько' : kind === 'spell' ? 'Заклинание' : 'Актив'}</label>
+                {isCount ? (
+                  <input
+                    type="number" min={1} max={9}
+                    value={Number(val ?? 1)}
+                    onChange={(e) => patchItem(i, { [kind]: Number(e.target.value) })}
+                  />
+                ) : (
+                  // Список приходит из меты (каталоги CMS). Руками id больше не
+                  // вводим: опечатка означала бы сыщика со стартовым предметом,
+                  // которого нет, и молча — движок такую ссылку не проверяет.
+                  <select
+                    value={String(val ?? '')}
+                    onChange={(e) => patchItem(i, { [kind]: e.target.value })}
+                  >
+                    <option value="">— выбрать —</option>
+                    {((kind === 'spell' ? meta?.spells : meta?.assets) ?? []).map((o) => (
+                      <option key={o.id} value={o.id}>{o.name}</option>
+                    ))}
+                    {String(val ?? '') !== ''
+                      && !((kind === 'spell' ? meta?.spells : meta?.assets) ?? []).some((o) => o.id === val) && (
+                      <option value={String(val)}>{String(val)} — нет в каталоге</option>
+                    )}
+                  </select>
+                )}
               </div>
               <button className="danger" onClick={() => patchItem(i, null)}>×</button>
             </div>
