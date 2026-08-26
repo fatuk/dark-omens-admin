@@ -8,7 +8,13 @@ export const LOCALES: Locale[] = ['en', 'ru'];
 // Активов и артефактов здесь НЕТ намеренно: это статические карточки, они живут
 // в data/assets.json игры, а не в корпусе. Записи прежних типов, если такие
 // остались, страница правки всё ещё открывает — селект подставляет им пункт «(?)».
-export const CONTENT_TYPES = ['encounter', 'mystery', 'mythos', 'ancient'] as const;
+// Каталоги игры (investigator/asset/spell/monster) перенесены сюда из
+// статических data/*.json: CMS — источник правды, файлы сборки — генерируемый
+// артефакт. Своих форм у них пока нет, редактируются сырым JSON.
+export const CONTENT_TYPES = [
+  'encounter', 'mystery', 'mythos', 'ancient',
+  'investigator', 'asset', 'spell', 'monster',
+] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
 
 // Виды встреч — РОВНО как в движке relay (encounter-prompt.ts):

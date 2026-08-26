@@ -400,7 +400,19 @@ export function EditPage() {
                   ? <MysteryFlow value={dataText} onChange={setDataText} meta={meta ?? undefined} />
                   : rec.type === 'mythos'
                     ? <MythosForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
-                    : <AncientForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
+                    : rec.type === 'ancient'
+                      ? <AncientForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
+                      // У каталогов (investigator/asset/spell/monster) своей формы
+                      // пока нет. Раньше сюда проваливался AncientForm и рисовал
+                      // чужие поля — лучше честный JSON, чем неверная форма.
+                      : (
+                        <AutoTextarea
+                          className="mech-json"
+                          value={dataText}
+                          onChange={(e) => setDataText(e.target.value)}
+                          spellCheck={false}
+                        />
+                      )
             ) : (
               <>
                 <textarea
