@@ -113,6 +113,14 @@ function labelForKey(key: string, prefix: string): string {
   return tail || key;
 }
 
+/**
+ * Поля, чьи значения выглядят как ключи перевода, но текстом карточки НЕ
+ * являются: это классификация. `set` — происхождение (INV_SET_CORE), `role` —
+ * роль сыщика (INV_ROLE_COMBAT), и роли к тому же общие для всех: править их
+ * копию внутри одной карточки бессмысленно и вредно.
+ */
+const NON_PROSE_FIELDS = new Set(['set', 'role', 'season']);
+
 /** Все ключи перевода, встречающиеся в данных карточки (в порядке обхода). */
 function keysIn(node: unknown, out: string[] = []): string[] {
   if (typeof node === 'string') {
@@ -121,7 +129,10 @@ function keysIn(node: unknown, out: string[] = []): string[] {
   }
   if (Array.isArray(node)) { for (const v of node) keysIn(v, out); return out; }
   if (node && typeof node === 'object') {
-    for (const v of Object.values(node as Record<string, unknown>)) keysIn(v, out);
+    for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+      if (NON_PROSE_FIELDS.has(k)) continue;
+      keysIn(v, out);
+    }
   }
   return out;
 }
