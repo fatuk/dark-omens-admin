@@ -94,6 +94,7 @@ export interface Meta {
   /** Каталоги для селектов (стартовый набор сыщика). */
   assets?: { id: string; name: string }[];
   spells?: { id: string; name: string }[];
+  artifacts?: { id: string; name: string }[];
   encounterKinds: string[];
   skills: string[];
   dsl?: {

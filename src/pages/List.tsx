@@ -1,11 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useContentList, useMeta, useDeleteContent, type ListFilters } from '@/hooks';
+import { useContentList, useMeta, useDeleteContent, useSetHasImage, type ListFilters } from '@/hooks';
 import { getContent, createContent } from '@/lib/api';
 import { CONTENT_TYPES, ENCOUNTER_KINDS, kindsFor, type ContentRecord } from '@/lib/types';
+import { fuzzyFilter } from '@/lib/fuzzy';
+import { SortableTh, sortRows, useTableSort } from '@/components/sortable-th';
 
-// Фильтры списка переживают перезагрузку/навигацию (localStorage, как API base/key).
+function fmtWhen(ms: number): string {
+  if (!ms) return '—';
+  const d = new Date(ms);
+  return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+// Фильтры и порядок сортировки переживают перезагрузку/навигацию (localStorage,
+// как API base/key). Поиск НЕ сохраняем намеренно: фильтр — это настройка рабочего
+// места, а запрос — разовое действие, и «список почему-то пустой» после F5 пугает.
 const LS_FILTERS = 'doa_content_filters';
+const LS_SORT = 'doa_content_sort';
 
 function loadFilters(): ListFilters {
   if (typeof window === 'undefined') return {};
@@ -34,6 +45,31 @@ export function ListPage() {
 
   const nav = useNavigate();
   const del = useDeleteContent();
+  const setArt = useSetHasImage();
+
+  // Поиск — клиентский и по нескольким полям сразу: у каталогов названия в
+  // списке нет (в i18n.en.name его не бывает), видно id, и искать надо по нему.
+  const [query, setQuery] = useState('');
+  // Фильтр по арту — клиентский: hasImage лежит в data карточки, серверных
+  // фильтров по полям data нет, а весь список и так приезжает целиком.
+  const [noArt, setNoArt] = useState(false);
+  const { sort, toggle } = useTableSort(LS_SORT);
+
+  const shown = useMemo(() => {
+    // Флага может не быть вовсе (сканер этот тип не трогает) — для «без картинки»
+    // это то же самое, что снятая галка: арта нет.
+    const base = noArt ? items.filter((it) => it.hasImage !== true) : items;
+    const found = fuzzyFilter(base, query, (it) => [it.title, it.id, it.type, ...it.tags]);
+    // Сортировка ПОСЛЕ поиска: пока запрос пуст, порядок серверный (свежие
+    // сверху); есть запрос и нет сортировки — порядок по релевантности.
+    return sortRows(found, sort, (it, key) => {
+      if (key === 'title') return it.title || it.id;
+      if (key === 'tags') return it.tags.join(' ');
+      // Сортировка по арту: сначала «нет картинки» — именно их и ищут.
+      if (key === 'hasImage') return it.hasImage === true ? 1 : 0;
+      return (it as unknown as Record<string, unknown>)[key];
+    });
+  }, [items, query, sort, noArt]);
 
   // Удаление с подтверждением (необратимо). Список обновляется инвалидацией в хуке.
   function deleteItem(id: string, title: string): void {
@@ -70,7 +106,14 @@ export function ListPage() {
 
   return (
     <div className="mx-auto max-w-[980px]">
-      <h2>Контент {isFetching ? '…' : `(${items.length})`}</h2>
+      <h2>
+        Контент{' '}
+        {isFetching
+          ? '…'
+          : shown.length === items.length
+            ? `(${items.length})`
+            : `(${shown.length} из ${items.length})`}
+      </h2>
       <div className="row">
         <div>
           <label>Тип</label>
@@ -152,6 +195,24 @@ export function ListPage() {
           />
         </div>
         <div className="flex-none">
+          <label>Арт</label>
+          <button
+            className={noArt ? 'primary' : ''}
+            onClick={() => setNoArt((v) => !v)}
+            title="Показать только карточки без картинки в игре"
+          >
+            без картинки
+          </button>
+        </div>
+        <div className="grow">
+          <label>Поиск</label>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="название, id или тег — обрывками: «некр», «vermis», можно не в той раскладке"
+          />
+        </div>
+        <div className="flex-none">
           <label>&nbsp;</label>
           <button onClick={() => void refetch()}>Обновить</button>
         </div>
@@ -166,16 +227,21 @@ export function ListPage() {
       <table className="mt-4">
         <thead>
           <tr>
-            <th>Название</th>
-            <th>Тип</th>
-            <th>Вид</th>
-            <th>Статус</th>
-            <th>Теги</th>
+            <SortableTh label="Название" sortKey="title" sort={sort} onSort={toggle} />
+            <SortableTh label="Тип" sortKey="type" sort={sort} onSort={toggle} />
+            <SortableTh label="Вид" sortKey="kind" sort={sort} onSort={toggle} />
+            <SortableTh label="Статус" sortKey="status" sort={sort} onSort={toggle} />
+            <SortableTh
+              label="Арт" sortKey="hasImage" sort={sort} onSort={toggle}
+              title="Есть ли картинка в игре. Галку можно ставить руками; make content-images пересчитает её по файлам"
+            />
+            <SortableTh label="Теги" sortKey="tags" sort={sort} onSort={toggle} />
+            <SortableTh label="Обновлено" sortKey="updatedAt" sort={sort} onSort={toggle} />
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {items.map((it) => (
+          {shown.map((it) => (
             <tr key={it.id}>
               <td>
                 <Link to={`/edit/${encodeURIComponent(it.id)}`}>
@@ -185,7 +251,17 @@ export function ListPage() {
               <td>{it.type}</td>
               <td>{it.kind || '—'}</td>
               <td><span className={`badge ${it.status}`}>{it.status}</span></td>
+              <td>
+                <input
+                  type="checkbox"
+                  checked={it.hasImage === true}
+                  disabled={setArt.isPending}
+                  title="Картинка добавлена в игру"
+                  onChange={(e) => setArt.mutate({ id: it.id, value: e.target.checked })}
+                />
+              </td>
               <td>{it.tags.map((t) => <span key={t} className="tag">{t}</span>)}</td>
+              <td className="hint whitespace-nowrap">{fmtWhen(it.updatedAt)}</td>
               <td>
                 <button onClick={() => void copyItem(it.id)} style={{ marginRight: 12 }}>
                   Копия
@@ -200,8 +276,16 @@ export function ListPage() {
               </td>
             </tr>
           ))}
-          {items.length === 0 && !isFetching && (
-            <tr><td colSpan={6} className="hint">Пусто. Создай новую запись.</td></tr>
+          {shown.length === 0 && !isFetching && (
+            <tr>
+              <td colSpan={8} className="hint">
+                {items.length === 0
+                  ? 'Пусто. Создай новую запись.'
+                  : query.trim()
+                    ? `Ничего не нашлось по запросу «${query}».`
+                    : 'Под фильтры ничего не подходит.'}
+              </td>
+            </tr>
           )}
         </tbody>
       </table>

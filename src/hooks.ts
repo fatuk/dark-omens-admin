@@ -8,7 +8,7 @@ import {
   listUsers, grantAccess, revokeAccess,
   type Meta,
 } from '@/lib/api';
-import type { ContentRecord } from '@/lib/types';
+import type { ContentListItem, ContentRecord } from '@/lib/types';
 
 export interface ListFilters {
   type?: string; kind?: string; status?: string; tag?: string;
@@ -43,6 +43,41 @@ export function useSaveContent() {
     onSuccess: (saved) => {
       qc.invalidateQueries({ queryKey: ['content', 'list'] });
       qc.setQueryData(keys.item(saved.id), saved);
+    },
+  });
+}
+
+/**
+ * Переключить служебный флаг `data.hasImage` прямо из списка.
+ *
+ * PUT на бэке ЗАМЕНЯЕТ запись целиком, поэтому сначала тянем карточку и
+ * отправляем её обратно с одним изменённым полем — иначе снесли бы механику и
+ * тексты. Правку показываем сразу (оптимистично) во всех кэшах списка: 591
+ * строка перезапрашивается заметно, а чекбокс должен щёлкать мгновенно.
+ */
+export function useSetHasImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; value: boolean }) => {
+      const rec = await getContent(v.id);
+      return updateContent(v.id, { ...rec, data: { ...rec.data, hasImage: v.value } });
+    },
+    onMutate: async (v) => {
+      await qc.cancelQueries({ queryKey: ['content', 'list'] });
+      const prev = qc.getQueriesData({ queryKey: ['content', 'list'] });
+      qc.setQueriesData<{ items: ContentListItem[] }>({ queryKey: ['content', 'list'] }, (old) =>
+        old
+          ? { ...old, items: old.items.map((it) => (it.id === v.id ? { ...it, hasImage: v.value } : it)) }
+          : old,
+      );
+      return { prev };
+    },
+    // Не удалось сохранить — возвращаем как было, иначе галка врёт про сервер.
+    onError: (_e, _v, ctx) => {
+      for (const [key, data] of ctx?.prev ?? []) qc.setQueryData(key, data);
+    },
+    onSettled: (saved) => {
+      if (saved) qc.setQueryData(keys.item(saved.id), saved);
     },
   });
 }

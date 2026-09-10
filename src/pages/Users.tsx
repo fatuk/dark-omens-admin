@@ -7,6 +7,8 @@
 import { useMemo, useState } from 'react';
 
 import { useUsers, useGrantAccess, useRevokeAccess } from '@/hooks';
+import { fuzzyFilter } from '@/lib/fuzzy';
+import { SortableTh, sortRows, useTableSort } from '@/components/sortable-th';
 import { useToast } from '@/components/toast';
 import type { UserLicenseRow } from '@/lib/api';
 
@@ -28,12 +30,19 @@ export function UsersPage() {
   const toast = useToast();
   const [filter, setFilter] = useState('');
 
+  const { sort, toggle } = useTableSort('doa_users_sort');
+
   const rows = useMemo(() => {
     const all = data?.users ?? [];
-    const q = filter.trim().toLowerCase();
-    if (!q) return all;
-    return all.filter((u) => u.email.toLowerCase().includes(q) || u.name.toLowerCase().includes(q));
-  }, [data, filter]);
+    // Нечёткий поиск: почта и имя пишутся по-разному («i.petrov@», «Иван П.»),
+    // и точное вхождение промахивается чаще, чем хотелось бы.
+    const found = fuzzyFilter(all, filter, (u) => [u.email, u.name, u.source, u.reason]);
+    return sortRows(found, sort, (u, key) => {
+      if (key === 'seasons') return (u.seasons ?? []).length;
+      if (key === 'access') return u.status ?? '';
+      return (u as unknown as Record<string, unknown>)[key];
+    });
+  }, [data, filter, sort]);
 
   async function onGrant(u: UserLicenseRow) {
     try {
@@ -88,20 +97,23 @@ export function UsersPage() {
         <input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          placeholder="Поиск по почте или имени"
+          placeholder="Поиск по почте или имени — можно обрывками"
         />
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>Почта</th>
-            <th>Имя</th>
-            <th>Регистрация</th>
-            <th>Доступ</th>
-            <th>Сезоны</th>
-            <th>Источник</th>
-            <th>Причина</th>
+            <SortableTh label="Почта" sortKey="email" sort={sort} onSort={toggle} />
+            <SortableTh label="Имя" sortKey="name" sort={sort} onSort={toggle} />
+            <SortableTh label="Регистрация" sortKey="createdAt" sort={sort} onSort={toggle} />
+            <SortableTh label="Доступ" sortKey="access" sort={sort} onSort={toggle} />
+            <SortableTh
+              label="Сезоны" sortKey="seasons" sort={sort} onSort={toggle}
+              title="Сортировать по ЧИСЛУ сезонов; третий клик — снять сортировку"
+            />
+            <SortableTh label="Источник" sortKey="source" sort={sort} onSort={toggle} />
+            <SortableTh label="Причина" sortKey="reason" sort={sort} onSort={toggle} />
             <th />
           </tr>
         </thead>
