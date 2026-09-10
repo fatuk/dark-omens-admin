@@ -12,6 +12,7 @@ import {
 } from '@/lib/prose';
 import { splitTags, joinTags, matchAxes, type MatchTags } from '@/lib/match';
 import { AutoTextarea } from '@/components/auto-textarea';
+import { ArtifactForm } from '@/components/dsl/artifact-form';
 import { AssetForm } from '@/components/dsl/asset-form';
 import { InvestigatorForm } from '@/components/dsl/investigator-form';
 import { MonsterForm } from '@/components/dsl/monster-form';
@@ -417,9 +418,11 @@ export function EditPage() {
                       ? <SpellForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
                     : rec.type === 'investigator'
                       ? <InvestigatorForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
-                      // У каталогов (investigator/asset/spell/monster) своей формы
-                      // пока нет. Раньше сюда проваливался AncientForm и рисовал
-                      // чужие поля — лучше честный JSON, чем неверная форма.
+                    : rec.type === 'artifact'
+                      ? <ArtifactForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
+                      // Тип без своей формы. Раньше сюда проваливался AncientForm
+                      // и рисовал чужие поля — лучше честный JSON, чем неверная
+                      // форма.
                       : (
                         <AutoTextarea
                           className="mech-json"

@@ -94,6 +94,19 @@ export function dataTemplate(type: string, kind: string): Record<string, unknown
   if (type === 'asset') {
     return { nameKey: '', season: '', cost: 1, traits: ['item'], abilityKey: '', effect: {} };
   }
+  // Артефакт — актив без цены: их не покупают, а выдают встречи и Иные миры.
+  if (type === 'artifact') {
+    return {
+      nameKey: '', season: '', unique: true,
+      traits: ['item'], abilityKey: '', effect: {},
+    };
+  }
+  // Локация: только тексты. Граф (connections/coordinates/type) живёт в
+  // data/locations.json игры, экспорт его не трогает — сюда его класть нельзя,
+  // копия устареет и появится вопрос «где правда про локацию».
+  if (type === 'location') {
+    return { id: '', nameKey: '', realKey: '', descKey: '' };
+  }
   if (type === 'spell') {
     return { name: '', subtype: 'ritual', season: '', traits: ['magical', 'spell'], front: {}, backs: [] };
   }

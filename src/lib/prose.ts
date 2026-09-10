@@ -91,7 +91,7 @@ const ANCIENT_PROSE: ProseGroup[] = [{
 
 /** Раскладка полей прозы под тип/вид. */
 /** Типы-каталоги: тексты лежат НЕ по фиксированным полям, а по ключам перевода. */
-const CATALOG_TYPES = new Set(['investigator', 'asset', 'spell', 'monster']);
+const CATALOG_TYPES = new Set(['investigator', 'asset', 'spell', 'monster', 'artifact', 'location']);
 
 /** Ключ перевода в данных карточки: ASSET_VAMPIRIC_TALISMAN_NAME. */
 const KEY_RE = /^[A-Z][A-Z0-9_]{3,}$/;
@@ -100,6 +100,7 @@ const KEY_RE = /^[A-Z][A-Z0-9_]{3,}$/;
 const KEY_LABELS: Record<string, string> = {
   NAME: 'Название', ABILITY: 'Способность', OCC: 'Профессия', QUOTE: 'Цитата',
   DESC: 'Описание', TITLE: 'Заголовок', TEXT: 'Текст', FLAVOR: 'Атмосфера',
+  REAL: 'Реальное место',
   PASSIVE: 'Пассив', ACTION: 'Действие', BACK: 'Оборот', FRONT: 'Лицо',
 };
 
@@ -155,7 +156,7 @@ export function catalogProse(data: unknown, type: string): ProseGroup[] {
     return {
       path: key,
       label: human === key ? key : `${human}  ·  ${key}`,
-      multiline: !/_(NAME|OCC|TITLE)$/.test(key),
+      multiline: !/_(NAME|OCC|TITLE|REAL)$/.test(key),
     };
   });
   return fields.length ? [{ fields }] : [];
