@@ -17,6 +17,7 @@ function fmtWhen(ms: number): string {
 // места, а запрос — разовое действие, и «список почему-то пустой» после F5 пугает.
 const LS_FILTERS = 'doa_content_filters';
 const LS_SORT = 'doa_content_sort';
+const LS_NO_ART = 'doa_content_noart';
 
 function loadFilters(): ListFilters {
   if (typeof window === 'undefined') return {};
@@ -26,6 +27,15 @@ function loadFilters(): ListFilters {
     return v && typeof v === 'object' && !Array.isArray(v) ? (v as ListFilters) : {};
   } catch {
     return {};
+  }
+}
+
+function loadNoArt(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem(LS_NO_ART) === '1';
+  } catch {
+    return false;
   }
 }
 
@@ -51,8 +61,14 @@ export function ListPage() {
   // списке нет (в i18n.en.name его не бывает), видно id, и искать надо по нему.
   const [query, setQuery] = useState('');
   // Фильтр по арту — клиентский: hasImage лежит в data карточки, серверных
-  // фильтров по полям data нет, а весь список и так приезжает целиком.
-  const [noArt, setNoArt] = useState(false);
+  // фильтров по полям data нет, а весь список и так приезжает целиком. Живёт в
+  // localStorage отдельно от серверных фильтров (в запрос не уходит), как сортировка.
+  const [noArt, setNoArt] = useState(loadNoArt);
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_NO_ART, noArt ? '1' : '0');
+    } catch { /* localStorage недоступен — не критично */ }
+  }, [noArt]);
   const { sort, toggle } = useTableSort(LS_SORT);
 
   const shown = useMemo(() => {
