@@ -126,6 +126,18 @@ export function EditPage() {
     setDataText(JSON.stringify(dataTemplate(rec.type, rec.kind), null, 2));
   }
 
+  // Служебный флаг «есть картинка в игре» — живёт в data.hasImage (как и в списке),
+  // поэтому правим его прямо в JSON механики: уедет обычным «Сохранить».
+  // Невалидный JSON в буфере — галку не трогаем (иначе затрём правку).
+  const parsedData: Record<string, unknown> | null = (() => {
+    try { return JSON.parse(dataText) as Record<string, unknown>; } catch { return null; }
+  })();
+  const hasImage = parsedData?.hasImage === true;
+  function setHasImage(v: boolean) {
+    if (!parsedData) return;
+    setDataText(JSON.stringify({ ...parsedData, hasImage: v }, null, 2));
+  }
+
   async function save() {
     let data: Record<string, unknown>;
     try { data = JSON.parse(dataText) as Record<string, unknown>; }
@@ -232,6 +244,21 @@ export function EditPage() {
             {m.season && !meta?.seasons?.some((s) => s.id === m.season) &&
               <option value={m.season}>{m.season} (?)</option>}
           </select>
+        </div>
+        <div>
+          <label>Арт</label>
+          <label
+            className="dsl-check"
+            title={parsedData ? 'Есть картинка в игре (служебный флаг data.hasImage)' : 'Механика (data) — невалидный JSON'}
+          >
+            <input
+              type="checkbox"
+              checked={hasImage}
+              disabled={!parsedData}
+              onChange={(e) => setHasImage(e.target.checked)}
+            />
+            {' '}есть картинка
+          </label>
         </div>
         {rec.type === 'ancient' && (
           <div>

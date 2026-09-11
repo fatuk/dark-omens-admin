@@ -72,6 +72,9 @@
   .row { @apply flex gap-3 flex-wrap items-end; }
   .row > * { @apply flex-[1_1_160px] min-w-[120px] max-w-[280px]; }
   .row select, .row input, .row textarea { @apply w-full; }
+  /* Чекбокс с подписью в строке формы (Edit «есть картинка», формы DSL). */
+  .dsl-check { @apply inline-flex items-center gap-2 text-text text-sm mt-0 mb-0 cursor-pointer; }
+  .dsl-check input[type="checkbox"] { @apply w-4 h-4 p-0 m-0 accent-gold; }
   .field { @apply mb-1; }
 
   .prose-group { @apply my-1.5; }
