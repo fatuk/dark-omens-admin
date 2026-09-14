@@ -5,7 +5,7 @@ import {
   getMeta, listContent, getContent,
   createContent, updateContent, deleteContent,
   draftFields, translateFields,
-  listUsers, grantAccess, revokeAccess,
+  listUsers, grantAccess, revokeAccess, inviteUser,
   type Meta,
 } from '@/lib/api';
 import type { ContentListItem, ContentRecord } from '@/lib/types';
@@ -111,6 +111,15 @@ export function useGrantAccess() {
   return useMutation({
     mutationFn: (v: { email: string; reason?: string; product?: string }) =>
       grantAccess(v.email, v.reason, v.product),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.users }),
+  });
+}
+
+export function useInviteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { email: string; name?: string; reason?: string }) =>
+      inviteUser(v.email, v.name, v.reason),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.users }),
   });
 }

@@ -6,7 +6,7 @@
 
 import { useMemo, useState } from 'react';
 
-import { useUsers, useGrantAccess, useRevokeAccess } from '@/hooks';
+import { useUsers, useGrantAccess, useRevokeAccess, useInviteUser } from '@/hooks';
 import { fuzzyFilter } from '@/lib/fuzzy';
 import { SortableTh, sortRows, useTableSort } from '@/components/sortable-th';
 import { useToast } from '@/components/toast';
@@ -27,8 +27,11 @@ export function UsersPage() {
   const { data, isLoading, error } = useUsers();
   const grant = useGrantAccess();
   const revoke = useRevokeAccess();
+  const invite = useInviteUser();
   const toast = useToast();
   const [filter, setFilter] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
 
   const { sort, toggle } = useTableSort('doa_users_sort');
 
@@ -77,6 +80,22 @@ export function UsersPage() {
     }
   }
 
+  // Игрок, которого ещё не было: заводим по почте и сразу даём доступ — он
+  // запросит код на эту почту и войдёт в игру без нашего участия.
+  async function onInvite(e: React.FormEvent) {
+    e.preventDefault();
+    const email = inviteEmail.trim();
+    if (!email) return;
+    try {
+      const r = await invite.mutateAsync({ email, name: inviteName.trim() });
+      toast.success(r.created ? `Добавлен: ${r.user.email}` : `Уже есть, доступ выдан: ${r.user.email}`);
+      setInviteEmail('');
+      setInviteName('');
+    } catch (err) {
+      toast.error(String((err as Error).message));
+    }
+  }
+
   if (isLoading) return <div className="container">Загрузка…</div>;
   if (error) return <div className="container danger">{String((error as Error).message)}</div>;
 
@@ -92,6 +111,31 @@ export function UsersPage() {
           действовать он начнёт только после включения.
         </div>
       )}
+
+      <form className="section" onSubmit={(e) => void onInvite(e)}>
+        <div className="section-title">Добавить игрока</div>
+        <div className="row">
+          <input
+            type="email"
+            required
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            placeholder="почта игрока"
+          />
+          <input
+            value={inviteName}
+            onChange={(e) => setInviteName(e.target.value)}
+            placeholder="имя (необязательно — возьмём с первого входа)"
+            maxLength={32}
+          />
+          <button className="primary" type="submit" disabled={invite.isPending}>
+            Добавить и выдать доступ
+          </button>
+        </div>
+        <div className="hint">
+          Игрок запрашивает код на эту почту в игре и входит сразу — регистрироваться заранее ему не нужно.
+        </div>
+      </form>
 
       <div className="row">
         <input

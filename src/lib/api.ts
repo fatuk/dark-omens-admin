@@ -189,6 +189,16 @@ export function grantAccess(email: string, reason = '', product = 'game'): Promi
   });
 }
 
+/** Завести игрока заранее (до первого входа) и сразу выдать доступ. */
+export function inviteUser(email: string, name = '', reason = ''): Promise<{
+  ok: boolean; created: boolean; user: { id: string; email: string; name: string };
+}> {
+  return req(`/admin/licenses/invite`, {
+    method: 'POST',
+    body: JSON.stringify({ email, name, reason }),
+  });
+}
+
 export function revokeAccess(email: string, reason = '', product = 'game'): Promise<{ ok: boolean }> {
   return req(`/admin/licenses/revoke`, {
     method: 'POST',
