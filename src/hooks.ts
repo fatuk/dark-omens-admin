@@ -6,6 +6,7 @@ import {
   createContent, updateContent, deleteContent,
   draftFields, translateFields,
   listUsers, grantAccess, revokeAccess, inviteUser,
+  listGames, getGameDetails, generateChronicle, saveChronicleStory, setChroniclePublished, deleteGame,
   type Meta,
 } from '@/lib/api';
 import type { ContentListItem, ContentRecord } from '@/lib/types';
@@ -20,6 +21,8 @@ const keys = {
   list: (f: ListFilters) => ['content', 'list', f] as const,
   item: (id: string) => ['content', 'item', id] as const,
   users: ['users'] as const,
+  games: ['games'] as const,
+  game: (id: string) => ['games', id] as const,
 };
 
 // Справочники для селектов — кэшируем надолго, не критичны (retry: false).
@@ -130,5 +133,47 @@ export function useRevokeAccess() {
     mutationFn: (v: { email: string; reason?: string; product?: string }) =>
       revokeAccess(v.email, v.reason, v.product),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.users }),
+  });
+}
+
+// ── Хроники партий ────────────────────────────────────────────────────────────
+
+export function useGames() {
+  return useQuery({ queryKey: keys.games, queryFn: listGames });
+}
+
+export function useGame(id: string | undefined) {
+  return useQuery({
+    queryKey: keys.game(id ?? ''),
+    queryFn: () => getGameDetails(id!),
+    enabled: Boolean(id),
+  });
+}
+
+function useGameMutation<A, R>(fn: (a: A) => Promise<R>, id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.game(id) });
+      void qc.invalidateQueries({ queryKey: keys.games });
+    },
+  });
+}
+
+export function useGenerateChronicle(id: string) {
+  return useGameMutation((_: void) => generateChronicle(id), id);
+}
+export function useSaveStory(id: string) {
+  return useGameMutation((story: Parameters<typeof saveChronicleStory>[1]) => saveChronicleStory(id, story), id);
+}
+export function useSetPublished(id: string) {
+  return useGameMutation((published: boolean) => setChroniclePublished(id, published), id);
+}
+export function useDeleteGame() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteGame(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.games }),
   });
 }

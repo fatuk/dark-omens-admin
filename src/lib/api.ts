@@ -205,3 +205,84 @@ export function revokeAccess(email: string, reason = '', product = 'game'): Prom
     body: JSON.stringify({ email, reason, product }),
   });
 }
+
+// ── Хроники партий ────────────────────────────────────────────────────────────
+// Реле пишет каждую партию (games/game_events); история генерится вручную
+// отсюда, правится и публикуется — публичная отдача на лендинг с /chronicles.
+
+export interface GameSummary {
+  id: string;
+  roomName: string;
+  lang: string;
+  ancient: string;
+  roster: { pid: string; investigator: string; dead: boolean }[];
+  rounds: number;
+  outcome: string;
+  startedAt: number;
+  endedAt: number | null;
+  events: number;
+  chronicle: 'draft' | 'published' | null;
+}
+
+export interface GameEvent {
+  seq: number;
+  ts: number;
+  round: number;
+  phase: string;
+  investigator: string;
+  kind: 'action' | 'milestone';
+  eventId: string;
+  params: Record<string, unknown>;
+}
+
+export interface Story {
+  title: string;
+  tagline: string;
+  prologue: string;
+  chapters: { title: string; text: string; rounds: [number, number] }[];
+  epilogue: string;
+  cast: { key: string; name: string; fate: string }[];
+}
+
+export interface Chronicle {
+  gameId: string;
+  slug: string;
+  lang: string;
+  status: 'draft' | 'published';
+  story: Story;
+  skeleton: Record<string, unknown>;
+  updatedAt: number;
+  publishedAt: number | null;
+}
+
+export function listGames(): Promise<{ games: GameSummary[] }> {
+  return req(`/admin/chronicles/games`);
+}
+
+export function getGameDetails(id: string): Promise<{
+  game: GameSummary; events: GameEvent[]; chronicle: Chronicle | null;
+}> {
+  return req(`/admin/chronicles/games/${encodeURIComponent(id)}`);
+}
+
+export function getGameSkeleton(id: string): Promise<{ skeleton: Record<string, unknown> }> {
+  return req(`/admin/chronicles/games/${encodeURIComponent(id)}/skeleton`);
+}
+
+export function generateChronicle(id: string): Promise<{ ok: boolean; chronicle: Chronicle }> {
+  return req(`/admin/chronicles/games/${encodeURIComponent(id)}/generate`, { method: 'POST' });
+}
+
+export function saveChronicleStory(id: string, story: Story): Promise<{ ok: boolean; chronicle: Chronicle }> {
+  return req(`/admin/chronicles/games/${encodeURIComponent(id)}/story`, {
+    method: 'PUT', body: JSON.stringify(story),
+  });
+}
+
+export function setChroniclePublished(id: string, published: boolean): Promise<{ ok: boolean; chronicle: Chronicle }> {
+  return req(`/admin/chronicles/games/${encodeURIComponent(id)}/${published ? 'publish' : 'unpublish'}`, { method: 'POST' });
+}
+
+export function deleteGame(id: string): Promise<{ ok: boolean }> {
+  return req(`/admin/chronicles/games/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
