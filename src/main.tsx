@@ -10,6 +10,7 @@ import { EditPage } from './pages/Edit';
 import { UsersPage } from './pages/Users';
 import { GamesPage } from './pages/Games';
 import { GamePage } from './pages/Game';
+import { AnalyticsPage } from './pages/Analytics';
 import { ToastProvider } from './components/toast';
 
 // SPA-роутинг. /edit/new — создание, /edit/:id — правка (id может быть 'new').
@@ -23,6 +24,7 @@ const router = createBrowserRouter([
       { path: 'users', element: <UsersPage /> },
       { path: 'games', element: <GamesPage /> },
       { path: 'games/:id', element: <GamePage /> },
+      { path: 'analytics', element: <AnalyticsPage /> },
     ],
   },
 ]);

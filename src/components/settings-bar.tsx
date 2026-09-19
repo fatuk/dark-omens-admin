@@ -26,6 +26,7 @@ export function SettingsBar() {
       <Link to="/">Список</Link>
       <Link to="/edit/new">+ Новая</Link>
       <Link to="/users">Доступ</Link>
+      <Link to="/analytics">Аналитика</Link>
       <Link to="/games">Хроники</Link>
       <span className="spacer" />
       <input

@@ -124,6 +124,14 @@ export function listContent(params: {
   return req(`/admin/content${qs ? '?' + qs : ''}`);
 }
 
+/** Полные записи (с data/i18n) по фильтру — для массовой аналитики. */
+export function listContentBulk(params: { type?: string; kind?: string; status?: string }): Promise<{ records: ContentRecord[] }> {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v) q.set(k, v);
+  const qs = q.toString();
+  return req(`/admin/content/bulk${qs ? '?' + qs : ''}`);
+}
+
 export function getContent(id: string): Promise<ContentRecord> {
   return req(`/admin/content/${encodeURIComponent(id)}`);
 }
