@@ -60,7 +60,6 @@ export function EncounterAnalysis(
   if (axes.location && m.location) ctx.push(`Только на клетке: ${locName(m.location)}`);
   else if (axes.loc) ctx.push(`Тип локации: ${m.loc || 'любой'}`);
   if (axes.world) ctx.push(`Иной мир: ${m.world || 'любой'}`);
-  if (axes.act && m.act) ctx.push(`Акт (стадия кампании): ${m.act}`);
   ctx.push(`Древний: ${m.ancient ? ancName(m.ancient) : 'любой (общая)'}`);
 
   // ── Шанс вытяжки: пул карт в том же тире, что пересекаются по контексту ──
@@ -74,7 +73,7 @@ export function EncounterAnalysis(
       if (isPinned ? cm.location !== m.location : cPinned) return false;        // тот же site-тир
       const cAncSpec = cm.ancient !== '' && cm.ancient !== 'any';
       if (ancSpecific ? cm.ancient !== m.ancient : cAncSpec) return false;      // тот же ancient-тир
-      return axisCompat(m.loc, cm.loc) && axisCompat(m.act, cm.act) && axisCompat(m.world, cm.world);
+      return axisCompat(m.loc, cm.loc) && axisCompat(m.world, cm.world);
     });
     const n = Math.max(1, competitors.length); // включая саму карту
     const tier = isPinned ? 'локационном' : ancSpecific ? 'специфичном Древнему' : 'общем';

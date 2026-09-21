@@ -116,7 +116,7 @@ export function getMeta(): Promise<Meta> {
 
 export function listContent(params: {
   type?: string; kind?: string; status?: string; tag?: string;
-  ancient?: string; loc?: string; world?: string; act?: string;
+  ancient?: string; loc?: string; world?: string;
 }): Promise<{ items: ContentListItem[] }> {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v) q.set(k, v);

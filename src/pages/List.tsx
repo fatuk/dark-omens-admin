@@ -194,15 +194,6 @@ export function ListPage() {
           </select>
         </div>
         <div>
-          <label>Акт</label>
-          <select value={filters.act ?? ''} onChange={(e) => set({ act: e.target.value })}>
-            <option value="">— любой —</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-          </select>
-        </div>
-        <div>
           <label>Тег</label>
           <input
             value={filters.tag ?? ''}

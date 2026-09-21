@@ -13,7 +13,7 @@ import type { ContentListItem, ContentRecord } from '@/lib/types';
 
 export interface ListFilters {
   type?: string; kind?: string; status?: string; tag?: string;
-  ancient?: string; loc?: string; world?: string; act?: string; season?: string;
+  ancient?: string; loc?: string; world?: string; season?: string;
 }
 
 const keys = {

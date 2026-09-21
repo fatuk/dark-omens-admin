@@ -77,7 +77,6 @@ export function dataTemplate(type: string, kind: string): Record<string, unknown
   // Проза (title/flavorText/text/resolution) живёт в i18n; здесь — механика.
   if (type === 'mystery') {
     return {
-      act: 1,
       solveCondition: { kind: 'cluesOnCard', n: 6 },
       // Триггер из живых (MYSTERY_TRIGGERS в relay): researchEncounterResolved
       // и прочие были выкинуты — движок их не вызывает, карточка с ними молча

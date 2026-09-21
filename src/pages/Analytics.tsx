@@ -27,13 +27,12 @@ interface Filters {
   ancient: string;
   loc: string;
   world: string;
-  act: string;
   tag: string;
   q: string;
 }
 
 const DEFAULT: Filters = {
-  kinds: [], status: '', season: '', ancient: '', loc: '', world: '', act: '', tag: '', q: '',
+  kinds: [], status: '', season: '', ancient: '', loc: '', world: '', tag: '', q: '',
 };
 
 /** Ячейка «раз · Σ»: число вхождений; сумма amount/count серым, только если больше числа
@@ -98,7 +97,6 @@ export function AnalyticsPage() {
       if (f.ancient && m.ancient !== f.ancient) return false;
       if (f.loc && m.loc !== f.loc) return false;
       if (f.world && m.world !== f.world) return false;
-      if (f.act && m.act !== f.act) return false;
       if (f.tag && !r.tags.some((t) => t.includes(f.tag))) return false;
       return true;
     });
@@ -161,10 +159,6 @@ export function AnalyticsPage() {
           <select value={f.world} onChange={(e) => update({ world: e.target.value })}>
             <option value="">— Иной мир —</option>
             {(meta?.otherWorlds ?? []).map((w) => <option key={w} value={w}>{w}</option>)}
-          </select>
-          <select value={f.act} onChange={(e) => update({ act: e.target.value })}>
-            <option value="">— акт —</option>
-            {['1', '2', '3'].map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
           <input value={f.tag} onChange={(e) => update({ tag: e.target.value })} placeholder="тег содержит…" style={{ width: 160 }} />
           <input value={f.q} onChange={(e) => update({ q: e.target.value })} placeholder="название / id" style={{ width: 200 }} />
