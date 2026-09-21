@@ -20,9 +20,10 @@ export const LOCALES: Locale[] = ['en', 'ru'];
 // relay EFFECT-DSL.md §15.12). Карточки заводим здесь заранее, экспорт в
 // data/*.json подключим вместе с движковой колодой — генерировать файл,
 // который никто не читает, значит заводить ту самую мёртвую лексику.
+// По алфавиту — так же рисуются селекторы типа в списке и редакторе.
 export const CONTENT_TYPES = [
-  'encounter', 'mystery', 'mythos', 'ancient',
-  'investigator', 'asset', 'spell', 'monster', 'artifact', 'location',
+  'ancient', 'artifact', 'asset', 'encounter', 'investigator',
+  'location', 'monster', 'mystery', 'mythos', 'spell',
 ] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
 
