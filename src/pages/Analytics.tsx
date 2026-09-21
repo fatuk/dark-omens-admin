@@ -36,6 +36,18 @@ const DEFAULT: Filters = {
   kinds: [], status: '', season: '', ancient: '', loc: '', world: '', act: '', tag: '', q: '',
 };
 
+/** Ячейка «раз · Σ»: число вхождений; сумма amount/count серым, только если больше числа
+ *  карт (у состояний/активов/навыков она равна числу и лишь дублирует его). */
+function CountCell({ c }: { c: { count: number; amount: number } }) {
+  if (!c.count) return null;
+  return (
+    <>
+      {c.count}
+      {c.amount > c.count && <span className="hint" style={{ marginLeft: 6 }}>Σ{c.amount}</span>}
+    </>
+  );
+}
+
 function loadFilters(): Filters {
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -198,8 +210,8 @@ export function AnalyticsPage() {
       <div className="section">
         <div className="section-title">Награды и штрафы</div>
         <div className="hint">
-          Количество — сколько раз эффект встречается в ветках; сумма — суммарный amount/count
-          (улики, здоровье, рассудок…). Детали — состояния/трейты/навыки в скобках.
+          Число — сколько раз эффект встречается в ветках; серым рядом — суммарный amount/count,
+          если он больше числа карт (здоровье, рассудок, ресурсы). Детали — состояния/трейты/навыки.
         </div>
         <label className="row" style={{ gap: 6, margin: '6px 0' }}>
           <input type="checkbox" checked={showFailure} onChange={(e) => setShowFailure(e.target.checked)} />
@@ -209,8 +221,8 @@ export function AnalyticsPage() {
           <thead>
             <tr>
               <th>Эффект</th><th>Класс</th>
-              <th>Успех: раз</th><th>Успех: сумма</th>
-              {showFailure && <><th>Провал: раз</th><th>Провал: сумма</th></>}
+              <th>Успех</th>
+              {showFailure && <th>Провал</th>}
               <th>Детали</th>
             </tr>
           </thead>
@@ -219,15 +231,14 @@ export function AnalyticsPage() {
               <tr key={v.verb}>
                 <td title={v.verb}>{verbLabel(v.verb)}</td>
                 <td><ClassBadge cls={v.cls} /></td>
-                <td>{v.success.count || ''}</td>
-                <td>{v.success.amount || ''}</td>
-                {showFailure && <><td>{v.failure.count || ''}</td><td>{v.failure.amount || ''}</td></>}
+                <td><CountCell c={v.success} /></td>
+                {showFailure && <td><CountCell c={v.failure} /></td>}
                 <td className="hint">
                   {Object.entries(v.details).sort((a, b) => b[1] - a[1]).map(([d, n]) => `${d} ×${n}`).join(', ')}
                 </td>
               </tr>
             ))}
-            {stats.verbs.length === 0 && <tr><td colSpan={7}>Эффектов нет.</td></tr>}
+            {stats.verbs.length === 0 && <tr><td colSpan={5}>Эффектов нет.</td></tr>}
           </tbody>
         </table>
       </div>
