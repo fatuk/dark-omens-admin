@@ -13,6 +13,7 @@
 // вынесен в форму, а не оставлен на вкладку JSON.
 import { useMemo } from 'react';
 import type { Meta } from '@/lib/api';
+import { refOptionsFrom } from '@/lib/dsl-refs';
 import { EffectList } from '@/components/dsl/effect-list';
 
 type Obj = Record<string, unknown>;
@@ -77,10 +78,7 @@ export function ArtifactForm(
     targetGroups: meta?.dsl?.targetGroups,
     locations: meta?.locations,
     targets: meta?.dsl?.targets,
-    refOptions: {
-      condition: meta?.dsl?.conditions ?? [],
-      skill: meta?.dsl?.skills ?? [],
-    },
+    refOptions: refOptionsFrom(meta),
   };
 
   const asList = (key: string): Eff[] => {

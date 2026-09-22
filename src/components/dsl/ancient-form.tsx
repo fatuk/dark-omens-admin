@@ -3,6 +3,7 @@
 // структура/числа. Локации Тайн здесь НЕТ — их задаёт сама карта Тайны.
 import { useMemo } from 'react';
 import type { Meta } from '@/lib/api';
+import { refOptionsFrom } from '@/lib/dsl-refs';
 import { NumField } from '@/components/num-field';
 import { EffectList } from '@/components/dsl/effect-list';
 import { ClueList, type Clue } from '@/components/dsl/clue-list';
@@ -30,10 +31,7 @@ export function AncientForm(
   const listProps = {
     verbs, verbDefs: meta?.dsl?.verbs, targetGroups: meta?.dsl?.targetGroups,
     locations: meta?.locations, targets: meta?.dsl?.targets,
-    refOptions: {
-      condition: meta?.dsl?.conditions ?? [],
-      skill: meta?.dsl?.skills ?? [],
-    },
+    refOptions: refOptionsFrom(meta),
   };
 
   // NB: «Локации Тайн» у Древнего УБРАНЫ — их задаёт сама карта Тайны (поле «Локации»

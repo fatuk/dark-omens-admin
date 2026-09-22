@@ -10,6 +10,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { Meta } from '@/lib/api';
+import { refOptionsFrom } from '@/lib/dsl-refs';
 import { Combobox } from '@/components/combobox';
 import { NumField } from '@/components/num-field';
 import { EffectList } from '@/components/dsl/effect-list';
@@ -138,7 +139,7 @@ export function EncounterFlow(
     const targetGroups = meta?.dsl?.targetGroups;
     const targets = meta?.dsl?.targets;
     const locations = meta?.locations;
-    const refOptions = { condition: meta?.dsl?.conditions ?? [], skill: skills };
+    const refOptions = refOptionsFrom(meta, skills);
     const ePass = (id: string, s: string, t: string): Edge =>
       ({ id, source: s, sourceHandle: 'pass', target: t, animated: true, style: { stroke: '#4db870' } });
     const eFail = (id: string, s: string, t: string): Edge =>

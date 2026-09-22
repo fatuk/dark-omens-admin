@@ -9,6 +9,7 @@
 // «Тексты» — здесь они живут ключами перевода.
 import { useMemo } from 'react';
 import type { Meta } from '@/lib/api';
+import { refOptionsFrom } from '@/lib/dsl-refs';
 import { EffectList } from '@/components/dsl/effect-list';
 
 type Obj = Record<string, unknown>;
@@ -59,7 +60,7 @@ export function SpellForm(
     targetGroups: meta?.dsl?.targetGroups,
     locations: meta?.locations,
     targets: meta?.dsl?.targets,
-    refOptions: { condition: meta?.dsl?.conditions ?? [], skill: skills },
+    refOptions: refOptionsFrom(meta, skills),
   };
 
   const backs = Array.isArray(d['backs']) ? (d['backs'] as Obj[]) : [];

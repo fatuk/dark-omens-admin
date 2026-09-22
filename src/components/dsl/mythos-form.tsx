@@ -3,6 +3,7 @@
 // DSL Расплаты/истечения, способ решения. Цвет берётся из вида/тега карточки.
 import { useMemo } from 'react';
 import type { Meta } from '@/lib/api';
+import { refOptionsFrom } from '@/lib/dsl-refs';
 import { EffectList } from '@/components/dsl/effect-list';
 
 type Eff = Record<string, unknown>;
@@ -33,10 +34,7 @@ export function MythosForm(
   const listProps = {
     verbs, verbDefs: meta?.dsl?.verbs, targetGroups: meta?.dsl?.targetGroups,
     locations: meta?.locations, targets: meta?.dsl?.targets,
-    refOptions: {
-      condition: meta?.dsl?.conditions ?? [],
-      skill: meta?.dsl?.skills ?? [],
-    },
+    refOptions: refOptionsFrom(meta),
   };
 
   // ── Слух (блок data.rumor) ──

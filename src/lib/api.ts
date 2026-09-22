@@ -106,6 +106,8 @@ export interface Meta {
     mysterySolveKinds?: string[];
     verbs?: Record<string, VerbDef>;            // verb-манифест (метаданные полей)
     targetGroups?: Record<string, string[]>;    // группы целей (id → targets)
+    /** Трейты карт из опубликованного контента + константы DSL — для ref trait. */
+    traits?: { asset: string[]; spell: string[]; artifact: string[] };
   };
 }
 
