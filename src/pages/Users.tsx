@@ -6,7 +6,7 @@
 
 import { useMemo, useState } from 'react';
 
-import { useUsers, useGrantAccess, useRevokeAccess, useInviteUser } from '@/hooks';
+import { useUsers, useGrantAccess, useRevokeAccess, useInviteUser, useDeleteUser } from '@/hooks';
 import { fuzzyFilter } from '@/lib/fuzzy';
 import { SortableTh, sortRows, useTableSort } from '@/components/sortable-th';
 import { useToast } from '@/components/toast';
@@ -28,6 +28,7 @@ export function UsersPage() {
   const grant = useGrantAccess();
   const revoke = useRevokeAccess();
   const invite = useInviteUser();
+  const del = useDeleteUser();
   const toast = useToast();
   const [filter, setFilter] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
@@ -63,6 +64,19 @@ export function UsersPage() {
     try {
       await revoke.mutateAsync({ email: u.email, reason });
       toast.success(`Доступ отозван: ${u.email}`);
+    } catch (e) {
+      toast.error(String((e as Error).message));
+    }
+  }
+
+  // Удаление — для мусорных регистраций (опечатка в почте, тестовая учётка).
+  // Необратимо: учётка, сессии и права уходят разом, живая игра игрока рвётся.
+  async function onDelete(u: UserLicenseRow) {
+    const msg = `Удалить игрока ${u.email}?\n\nУчётка, сессии и права будут удалены, текущая игра прервана. Отменить нельзя.`;
+    if (!confirm(msg)) return;
+    try {
+      const r = await del.mutateAsync({ email: u.email });
+      toast.success(`Удалён: ${u.email} (сессий ${r.deleted.sessions}, прав ${r.deleted.licenses})`);
     } catch (e) {
       toast.error(String((e as Error).message));
     }
@@ -171,13 +185,13 @@ export function UsersPage() {
               <td>
                 {/* Сезоны независимы от базы: право на сезон НЕ даёт права на
                     игру, поэтому переключаются отдельно от кнопки доступа. */}
-                <div className="row" style={{ gap: 4, flexWrap: 'wrap' }}>
+                <div className="flex flex-wrap gap-1 w-[250px]">
                   {(data?.seasons ?? []).map((s) => {
                     const owned = u.seasons?.includes(s.id) ?? false;
                     return (
                       <button
                         key={s.id}
-                        className={owned ? 'primary' : ''}
+                        className={`chip-btn${owned ? ' primary' : ''}`}
                         title={s.name}
                         onClick={() => void onToggleSeason(u, s.id, owned)}
                       >
@@ -195,6 +209,13 @@ export function UsersPage() {
                 ) : (
                   <button className="primary" onClick={() => void onGrant(u)}>Выдать</button>
                 )}
+                <button
+                  className="ml-2"
+                  title="Удалить учётку вместе с сессиями и правами"
+                  onClick={() => void onDelete(u)}
+                >
+                  Удалить
+                </button>
               </td>
             </tr>
           ))}

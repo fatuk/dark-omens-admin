@@ -5,7 +5,7 @@ import {
   getMeta, listContent, getContent,
   createContent, updateContent, deleteContent,
   draftFields, translateFields,
-  listUsers, grantAccess, revokeAccess, inviteUser,
+  listUsers, grantAccess, revokeAccess, inviteUser, deleteUser,
   listGames, getGameDetails, generateChronicle, saveChronicleStory, setChroniclePublished, deleteGame,
   type Meta,
 } from '@/lib/api';
@@ -132,6 +132,14 @@ export function useRevokeAccess() {
   return useMutation({
     mutationFn: (v: { email: string; reason?: string; product?: string }) =>
       revokeAccess(v.email, v.reason, v.product),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.users }),
+  });
+}
+
+export function useDeleteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { email: string }) => deleteUser(v.email),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.users }),
   });
 }

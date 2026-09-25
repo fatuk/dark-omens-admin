@@ -216,6 +216,13 @@ export function revokeAccess(email: string, reason = '', product = 'game'): Prom
   });
 }
 
+/** Удалить игрока целиком: учётка, сессии и права. История партий остаётся. */
+export function deleteUser(email: string): Promise<{
+  ok: boolean; deleted: { sessions: number; licenses: number };
+}> {
+  return req(`/admin/licenses/${encodeURIComponent(email)}`, { method: 'DELETE' });
+}
+
 // ── Хроники партий ────────────────────────────────────────────────────────────
 // Реле пишет каждую партию (games/game_events); история генерится вручную
 // отсюда, правится и публикуется — публичная отдача на лендинг с /chronicles.

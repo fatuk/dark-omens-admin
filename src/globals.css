@@ -56,6 +56,8 @@
   }
 
   .badge { @apply inline-block px-2 py-px rounded-[10px] text-[11px] border border-line text-muted; }
+  /* Компактная кнопка-чип (переключатели сезонов в таблице игроков). */
+  .chip-btn { @apply px-2 py-px rounded-[10px] text-[11px] leading-5 min-w-0 flex-none; }
   .badge.published { @apply text-green border-[#2e5a3a]; }
   .tag {
     @apply inline-block px-[7px] py-px mr-[3px] mb-[3px] rounded
