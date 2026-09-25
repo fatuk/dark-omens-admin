@@ -37,7 +37,7 @@
   }
   .bar .title { @apply text-gold font-bold tracking-[.04em]; }
   .bar .spacer { @apply flex-1; }
-  .container { @apply max-w-[980px] mx-auto px-5 py-6; }
+  .container { @apply max-w-[1280px] mx-auto px-5 py-6; }
 
   .primary { @apply bg-[#243018] border-[#3d5022] text-[#e9d39a]; }
   .danger { @apply text-danger; }
