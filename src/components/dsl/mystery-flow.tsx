@@ -9,6 +9,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { Meta, VerbDef } from '@/lib/api';
+import type { RefOption } from '@/lib/dsl-refs';
 import { Combobox } from '@/components/combobox';
 import { NumField } from '@/components/num-field';
 import { EffectList } from '@/components/dsl/effect-list';
@@ -68,7 +69,7 @@ interface OnEnterData extends Record<string, unknown> {
   targets?: string[];
   verbDefs?: Record<string, VerbDef>;
   targetGroups?: Record<string, string[]>;
-  refOptions?: Record<string, string[]>;
+  refOptions?: Record<string, RefOption[]>;
 }
 function OnEnterNode(props: NodeProps): JSX.Element {
   const d = props.data as unknown as OnEnterData;
@@ -86,7 +87,7 @@ interface HookData extends Record<string, unknown> {
   targets?: string[];
   verbDefs?: Record<string, VerbDef>;
   targetGroups?: Record<string, string[]>;
-  refOptions?: Record<string, string[]>;
+  refOptions?: Record<string, RefOption[]>;
   onHook: (h: Hook) => void; onRemove: () => void;
 }
 function HookNode(props: NodeProps): JSX.Element {

@@ -9,6 +9,7 @@
 import { Combobox } from '@/components/combobox';
 import { NumField } from '@/components/num-field';
 import type { VerbDef } from '@/lib/api';
+import { refOptionId, refOptionLabel, type RefOption } from '@/lib/dsl-refs';
 
 type Eff = Record<string, unknown>;
 
@@ -28,7 +29,7 @@ type Props = {
   targets?: string[];
   // Справочники для ref-параметров (condition/skill/resource → дропдаун id).
   // Ключ — RefKind из манифеста; значение — список допустимых id.
-  refOptions?: Record<string, string[]>;
+  refOptions?: Record<string, RefOption[]>;
   // Разрешить редактировать cost (цена опции) на листах. Включается для веток
   // choice — «заплати улику/рассудок, чтобы выбрать эту опцию» (как в картах Мифов).
   allowCost?: boolean;
@@ -242,7 +243,9 @@ export function EffectList(
                 <select key={rp.name} value={String(e[rp.name] ?? '')} title={rp.name}
                   onChange={(ev) => patch(i, { [rp.name]: ev.target.value || undefined })}>
                   <option value="">— {rp.name}{rp.required ? ' *' : ''} —</option>
-                  {opts.map((o) => <option key={o} value={o}>{o}</option>)}
+                  {opts.map((o) => (
+                    <option key={refOptionId(o)} value={refOptionId(o)}>{refOptionLabel(o)}</option>
+                  ))}
                 </select>
               ) : (
                 <input key={rp.name} className="w-28" value={String(e[rp.name] ?? '')}

@@ -10,7 +10,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { Meta } from '@/lib/api';
-import { refOptionsFrom } from '@/lib/dsl-refs';
+import { refOptionsFrom, type RefOption } from '@/lib/dsl-refs';
 import { Combobox } from '@/components/combobox';
 import { NumField } from '@/components/num-field';
 import { EffectList } from '@/components/dsl/effect-list';
@@ -88,7 +88,7 @@ interface EffData extends Record<string, unknown> {
   targetGroups?: Record<string, string[]>;
   locations?: { id: string; name: string }[];
   targets?: string[];
-  refOptions?: Record<string, string[]>;
+  refOptions?: Record<string, RefOption[]>;
   onEffects: (e: Eff[]) => void;
 }
 

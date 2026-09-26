@@ -102,6 +102,7 @@ export interface Meta {
     actionVerbs: string[];
     targets: string[];
     conditions: string[];
+    conditionKinds?: string[];  // виды состояний для gainCondition kind
     mysteryTriggers?: string[];
     mysterySolveKinds?: string[];
     verbs?: Record<string, VerbDef>;            // verb-манифест (метаданные полей)
