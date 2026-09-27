@@ -19,6 +19,12 @@ const passProb = (pool: number): number => 1 - Math.pow(1 - PASS_PER_DIE, Math.m
 const pct = (x: number): string => `${Math.round(x * 100)}%`;
 const fmt = (x: number): string => (Math.round(x * 10) / 10).toString();
 const axisCompat = (a: string, b: string): boolean => a === '' || b === '' || a === b;
+const plural = (n: number, one: string, few: string, many: string): string => {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+};
 const median = (xs: number[]): number => {
   if (xs.length === 0) return 0;
   const s = [...xs].sort((a, b) => a - b);
@@ -231,6 +237,38 @@ function useBulk(type: string) {
   });
 }
 
+// Распределение ростера по размеру пула: одна полоска на пул (шанс от пула и
+// зависит), длина — сколько сыщиков, имена — в подсказке. Медианный пул подсвечен.
+function PoolHistogram({ odds, median: med }: { odds: { name: string; pool: number; p: number }[]; median: number }) {
+  const byPool = new Map<number, { p: number; names: string[] }>();
+  for (const o of odds) {
+    const b = byPool.get(o.pool) ?? { p: o.p, names: [] };
+    b.names.push(o.name);
+    byPool.set(o.pool, b);
+  }
+  const rows = [...byPool.entries()].sort((a, b) => a[0] - b[0]);
+  const max = Math.max(1, ...rows.map(([, b]) => b.names.length));
+  const cell: CSSProperties = { fontSize: 12, color: '#a89f8c', whiteSpace: 'nowrap' };
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr max-content', gap: '3px 10px', alignItems: 'center', marginTop: 6 }}>
+      {rows.map(([pool, b]) => {
+        const isMedian = Math.abs(b.p - med) < 0.001;
+        return [
+          <div key={`l${pool}`} style={{ ...cell, color: isMedian ? '#e9d39a' : cell.color }}>
+            {pool} куб. · <span style={b.p < 0.5 ? { color: '#c4756a' } : b.p >= 0.8 ? { color: '#4db870' } : undefined}>{pct(b.p)}</span>
+          </div>,
+          <div key={`b${pool}`} title={b.names.join(', ')} style={{ height: 12, background: '#1c1729', borderRadius: 4, overflow: 'hidden', cursor: 'help' }}>
+            <div style={{ width: `${(b.names.length / max) * 100}%`, height: '100%', background: isMedian ? '#c7a84a' : '#6b5a2e', borderRadius: 4 }} />
+          </div>,
+          <div key={`n${pool}`} style={cell} title={b.names.join(', ')}>{b.names.length} {plural(b.names.length, 'сыщик', 'сыщика', 'сыщиков')}</div>,
+        ];
+      })}
+      <div style={{ ...cell, gridColumn: '1 / -1', color: '#7a7060' }}>Наведи на полоску — имена. Золотом — медианный пул.</div>
+    </div>
+  );
+}
+
+
 export function EncounterAnalysis(
   { rec, meta, onClose }: { rec: ContentRecord; meta: Meta | undefined; onClose: () => void },
 ) {
@@ -325,15 +363,7 @@ export function EncounterAnalysis(
                     {' '}до <span style={good}>{pct(best!.p)}</span> ({best!.name}, {best!.pool} куб.), медиана {pct(median(ps))}</>
                 )}
               </div>
-              {odds.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 10px', marginTop: 4, fontSize: 12, color: '#a89f8c' }}>
-                  {odds.map((o) => (
-                    <span key={o.name} title={`${o.name}: навык ${o.base}${t.modifier ? ` ${t.modifier > 0 ? '+' : ''}${t.modifier}` : ''} → ${o.pool} куб.`}>
-                      {o.name} <span style={o.p < 0.5 ? bad : o.p >= 0.8 ? good : undefined}>{pct(o.p)}</span>
-                    </span>
-                  ))}
-                </div>
-              )}
+              {odds.length > 0 && <PoolHistogram odds={odds} median={median(ps)} />}
               {investigators.isLoading && <div style={hint}>Сыщики загружаются…</div>}
             </div>
           );
