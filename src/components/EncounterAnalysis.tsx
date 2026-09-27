@@ -246,8 +246,7 @@ function PoolHistogram({ odds, median: med }: { odds: { name: string; pool: numb
     b.names.push(o.name);
     byPool.set(o.pool, b);
   }
-  // Подсказка — вертикальный список по алфавиту (title рисует 
- переводом строки).
+  // Подсказка — вертикальный список по алфавиту (перевод строки в title браузер рисует).
   const rows = [...byPool.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([pool, b]) => [pool, { ...b, names: [...b.names].sort((x, y) => x.localeCompare(y, 'ru')) }] as const);
@@ -261,12 +260,10 @@ function PoolHistogram({ odds, median: med }: { odds: { name: string; pool: numb
           <div key={`l${pool}`} style={{ ...cell, color: isMedian ? '#e9d39a' : cell.color }}>
             {pool} куб. · <span style={b.p < 0.5 ? { color: '#c4756a' } : b.p >= 0.8 ? { color: '#4db870' } : undefined}>{pct(b.p)}</span>
           </div>,
-          <div key={`b${pool}`} title={b.names.join('
-')} style={{ height: 12, background: '#1c1729', borderRadius: 4, overflow: 'hidden', cursor: 'help' }}>
+          <div key={`b${pool}`} title={b.names.join('\n')} style={{ height: 12, background: '#1c1729', borderRadius: 4, overflow: 'hidden', cursor: 'help' }}>
             <div style={{ width: `${(b.names.length / max) * 100}%`, height: '100%', background: isMedian ? '#c7a84a' : '#6b5a2e', borderRadius: 4 }} />
           </div>,
-          <div key={`n${pool}`} style={cell} title={b.names.join('
-')}>{b.names.length} {plural(b.names.length, 'сыщик', 'сыщика', 'сыщиков')}</div>,
+          <div key={`n${pool}`} style={cell} title={b.names.join('\n')}>{b.names.length} {plural(b.names.length, 'сыщик', 'сыщика', 'сыщиков')}</div>,
         ];
       })}
       <div style={{ ...cell, gridColumn: '1 / -1', color: '#7a7060' }}>Наведи на полоску — имена. Золотом — медианный пул.</div>
@@ -411,7 +408,7 @@ export function EncounterAnalysis(
         {encounters.isLoading && <p style={{ margin: 0 }}>Загрузка…</p>}
         {siblings.length > 0 && (
           <table style={table}>
-            <thead><tr><th style={th}>Карта</th><th style={th}>Проверка</th><th style={th}>Награда</th><th style={th}>Штраф</th><th style={th}>ОЦ</th></tr></thead>
+            <thead><tr><th style={th}>Карта</th><th style={th}>Проверка</th><th style={th}>Награда</th><th style={th}>Штраф</th><th style={th} title="Ожидаемая ценность: p·(награда − цена успеха) − (1−p)·штраф, p — медианный шанс по ростеру">Ожид. ценность</th></tr></thead>
             <tbody>
               {[mine, ...others].sort((a, b) => b.ev - a.ev).map((c) => (
                 <tr key={c.id} style={c.id === rec.id ? { color: '#e9d39a', background: '#1c1729' } : undefined}>
