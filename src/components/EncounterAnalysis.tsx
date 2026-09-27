@@ -246,7 +246,11 @@ function PoolHistogram({ odds, median: med }: { odds: { name: string; pool: numb
     b.names.push(o.name);
     byPool.set(o.pool, b);
   }
-  const rows = [...byPool.entries()].sort((a, b) => a[0] - b[0]);
+  // Подсказка — вертикальный список по алфавиту (title рисует 
+ переводом строки).
+  const rows = [...byPool.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([pool, b]) => [pool, { ...b, names: [...b.names].sort((x, y) => x.localeCompare(y, 'ru')) }] as const);
   const max = Math.max(1, ...rows.map(([, b]) => b.names.length));
   const cell: CSSProperties = { fontSize: 12, color: '#a89f8c', whiteSpace: 'nowrap' };
   return (
@@ -257,10 +261,12 @@ function PoolHistogram({ odds, median: med }: { odds: { name: string; pool: numb
           <div key={`l${pool}`} style={{ ...cell, color: isMedian ? '#e9d39a' : cell.color }}>
             {pool} куб. · <span style={b.p < 0.5 ? { color: '#c4756a' } : b.p >= 0.8 ? { color: '#4db870' } : undefined}>{pct(b.p)}</span>
           </div>,
-          <div key={`b${pool}`} title={b.names.join(', ')} style={{ height: 12, background: '#1c1729', borderRadius: 4, overflow: 'hidden', cursor: 'help' }}>
+          <div key={`b${pool}`} title={b.names.join('
+')} style={{ height: 12, background: '#1c1729', borderRadius: 4, overflow: 'hidden', cursor: 'help' }}>
             <div style={{ width: `${(b.names.length / max) * 100}%`, height: '100%', background: isMedian ? '#c7a84a' : '#6b5a2e', borderRadius: 4 }} />
           </div>,
-          <div key={`n${pool}`} style={cell} title={b.names.join(', ')}>{b.names.length} {plural(b.names.length, 'сыщик', 'сыщика', 'сыщиков')}</div>,
+          <div key={`n${pool}`} style={cell} title={b.names.join('
+')}>{b.names.length} {plural(b.names.length, 'сыщик', 'сыщика', 'сыщиков')}</div>,
         ];
       })}
       <div style={{ ...cell, gridColumn: '1 / -1', color: '#7a7060' }}>Наведи на полоску — имена. Золотом — медианный пул.</div>
