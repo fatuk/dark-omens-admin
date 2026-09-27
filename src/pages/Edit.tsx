@@ -194,12 +194,20 @@ export function EditPage() {
     <div className="min-w-0">
       <h2>{isNew ? 'Новая запись' : `Правка: ${getAt(rec.i18n.en, 'name') || id}`}</h2>
       {rec.type === 'encounter' && (
-        <button type="button" onClick={() => setShowAnalysis(true)} style={{ marginBottom: 12 }}>
-          📊 Анализ встречи
+        <button type="button" onClick={() => setShowAnalysis((v) => !v)} style={{ marginBottom: 12 }}>
+          {showAnalysis ? 'Скрыть анализ' : '📊 Анализ встречи'}
         </button>
       )}
+      {/* Живой анализ: механика — из буфера конструктора (dataText), а не из сохранённой
+          записи, чтобы подбирать награды/штрафы без «сохранить и перезагрузить».
+          Невалидный JSON в буфере → считаем по последней валидной data и предупреждаем. */}
       {showAnalysis && (
-        <EncounterAnalysis rec={rec} meta={meta} onClose={() => setShowAnalysis(false)} />
+        <EncounterAnalysis
+          rec={parsedData ? { ...rec, data: parsedData } : rec}
+          stale={parsedData === null}
+          meta={meta}
+          onClose={() => setShowAnalysis(false)}
+        />
       )}
 
       <section className="section">

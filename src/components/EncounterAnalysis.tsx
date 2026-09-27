@@ -273,7 +273,8 @@ function PoolHistogram({ odds, median: med }: { odds: { name: string; pool: numb
 
 
 export function EncounterAnalysis(
-  { rec, meta, onClose }: { rec: ContentRecord; meta: Meta | undefined; onClose: () => void },
+  { rec, meta, onClose, stale = false }:
+  { rec: ContentRecord; meta: Meta | undefined; onClose: () => void; stale?: boolean },
 ) {
   const encounters = useBulk('encounter');
   const investigators = useBulk('investigator');
@@ -326,10 +327,11 @@ export function EncounterAnalysis(
   if (axes.world) ctx.push(m.world || 'любой Иной мир');
   ctx.push(m.ancient && m.ancient !== 'any' ? ancName(m.ancient) : 'общая');
 
+  // Инлайн-панель в левой колонке (не модалка): конструктор справа остаётся живым,
+  // и анализ пересчитывается на каждую правку эффектов.
   const box: CSSProperties = {
     background: '#14111f', border: '1px solid #3d2e10', borderRadius: 8,
-    padding: 24, maxWidth: 760, width: '92%', maxHeight: '88vh', overflow: 'auto',
-    color: '#d4cfc0', fontSize: 14, lineHeight: 1.5,
+    padding: '16px 20px', marginBottom: 16, color: '#d4cfc0', fontSize: 14, lineHeight: 1.5,
   };
   const head: CSSProperties = { color: '#c7a84a', marginTop: 18, marginBottom: 6 };
   const hint: CSSProperties = { color: '#7a7060', fontSize: 12, marginTop: 4 };
@@ -343,10 +345,13 @@ export function EncounterAnalysis(
   );
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div onClick={(e) => e.stopPropagation()} style={box}>
-        <h3 style={{ color: '#c7a84a', marginTop: 0, marginBottom: 2 }}>📊 {titleOf(rec)}</h3>
-        <div style={hint}>Выпадает: {ctx.join(' · ')}</div>
+    <div style={box} data-analysis>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+          <h3 style={{ color: '#c7a84a', marginTop: 0, marginBottom: 2 }}>📊 {titleOf(rec)}</h3>
+          <button type="button" onClick={onClose}>Скрыть</button>
+        </div>
+        <div style={hint}>Выпадает: {ctx.join(' · ')} · пересчитывается по буферу конструктора</div>
+        {stale && <div style={{ ...bad, fontSize: 12, marginTop: 4 }}>JSON механики сейчас невалиден — анализ по последней валидной версии.</div>}
 
         {/* 1. Шанс успеха по сыщикам */}
         <h4 style={head}>Шанс успеха по сыщикам</h4>
@@ -424,10 +429,6 @@ export function EncounterAnalysis(
         )}
         <p style={hint}>Одинаковая проверка у нескольких соседей — повод развести модификаторы. Нейтральные глаголы ({Object.keys(VERB_RU).filter((v) => classify(v) === 'neutral').map((v) => VERB_RU[v]).join(', ')}) в вес не входят.</p>
 
-        <div style={{ marginTop: 18, textAlign: 'right' }}>
-          <button type="button" onClick={onClose}>Закрыть</button>
-        </div>
-      </div>
     </div>
   );
 }
