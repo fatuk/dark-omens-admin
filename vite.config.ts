@@ -9,4 +9,7 @@ export default defineConfig({
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   server: { port: 3040 },
+  // Полифилл modulepreload не нужен (один бандл, современные браузеры) — без него
+  // в бандл не попадает лишний код, а CSP script-src остаётся строгим 'self'.
+  build: { modulePreload: { polyfill: false } },
 });

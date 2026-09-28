@@ -20,6 +20,28 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+    # Заголовки безопасности. Главный риск панели — XSS: в localStorage лежит
+    # admin-key, и любой чужой скрипт на странице его утащит. CSP запрещает
+    # сторонние скрипты и инлайн-JS; connect-src широкий (https:), потому что
+    # API base переопределяется в шапке; 'unsafe-inline' у style — для inline-
+    # стилей React Flow/React. frame-ancestors 'none' + X-Frame-Options: панель
+    # не должна открываться во фрейме чужого сайта (clickjacking).
+    headers:
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
     envVars:
       # Дефолтный URL relay, зашивается в бандл на этапе сборки (build-time).
       # Не секрет (публичный URL). В шапке его всё ещё можно переопределить

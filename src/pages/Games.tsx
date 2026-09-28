@@ -49,8 +49,19 @@ export function GamesPage() {
     ]);
   }, [data, filter]);
 
+  // Подтверждение вводом первых символов id: удаление необратимо (события и
+  // хроника уходят вместе с партией).
   async function onDelete(g: GameSummary) {
-    if (!confirm(`Удалить партию «${g.roomName || g.id.slice(0, 8)}» вместе с событиями и историей?`)) return;
+    const short = g.id.slice(0, 8);
+    const typed = window.prompt(
+      `Удаление необратимо: партия «${g.roomName || short}» будет удалена вместе с событиями и историей.\n`
+      + `Введите первые 8 символов id для подтверждения:\n${short}`,
+    );
+    if (typed === null) return;
+    if (typed.trim().toLowerCase() !== short.toLowerCase()) {
+      toast.error('Подтверждение не совпало, удаление отменено');
+      return;
+    }
     try {
       await del.mutateAsync(g.id);
       toast.success('Партия удалена');

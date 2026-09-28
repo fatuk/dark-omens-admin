@@ -33,6 +33,7 @@ export function SettingsBar() {
         value={base}
         onChange={(e) => setBase(e.target.value)}
         placeholder="API base (http://localhost:3031)"
+        autoComplete="off"
         className="w-[240px]"
       />
       <input
@@ -40,6 +41,10 @@ export function SettingsBar() {
         onChange={(e) => setKey(e.target.value)}
         placeholder="admin-key"
         type="password"
+        // new-password: менеджеры паролей не сохраняют и не подставляют ключ.
+        name="admin-key"
+        autoComplete="new-password"
+        spellCheck={false}
         className="w-[140px]"
       />
       <button onClick={save}>{saved ? '✓' : 'Сохранить'}</button>

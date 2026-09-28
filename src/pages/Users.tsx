@@ -71,9 +71,18 @@ export function UsersPage() {
 
   // Удаление — для мусорных регистраций (опечатка в почте, тестовая учётка).
   // Необратимо: учётка, сессии и права уходят разом, живая игра игрока рвётся.
+  // Подтверждение вводом, а не одним «ОК»: случайный клик по «Удалить» в
+  // таблице стоит слишком дорого.
   async function onDelete(u: UserLicenseRow) {
-    const msg = `Удалить игрока ${u.email}?\n\nУчётка, сессии и права будут удалены, текущая игра прервана. Отменить нельзя.`;
-    if (!confirm(msg)) return;
+    const typed = window.prompt(
+      `Удаление необратимо: учётка, сессии и права будут удалены, текущая игра прервана.\n`
+      + `Введите email игрока для подтверждения:\n${u.email}`,
+    );
+    if (typed === null) return;
+    if (typed.trim().toLowerCase() !== u.email.toLowerCase()) {
+      toast.error('Подтверждение не совпало, удаление отменено');
+      return;
+    }
     try {
       const r = await del.mutateAsync({ email: u.email });
       toast.success(`Удалён: ${u.email} (сессий ${r.deleted.sessions}, прав ${r.deleted.licenses})`);

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useBlocker, useNavigate, useParams } from 'react-router-dom';
 import {
   useContent, useMeta, useSaveContent, useDeleteContent, useDraft, useTranslate,
 } from '@/hooks';
@@ -58,8 +58,11 @@ export function EditPage() {
   useEffect(() => {
     if (isNew) {
       if (seededRef.current === 'new') return;
-      setRec({ ...EMPTY, i18n: { en: {}, ru: {} } });
-      setDataText(JSON.stringify(dataTemplate(EMPTY.type, EMPTY.kind), null, 2));
+      const fresh: ContentRecord = { ...EMPTY, i18n: { en: {}, ru: {} } };
+      const freshText = JSON.stringify(dataTemplate(EMPTY.type, EMPTY.kind), null, 2);
+      setRec(fresh);
+      setDataText(freshText);
+      takeSnapshot(fresh, freshText);
       setFreeText('');
       setLocale('en');
       seededRef.current = 'new';
@@ -67,8 +70,11 @@ export function EditPage() {
     }
     const r = query.data;
     if (!r || seededRef.current === id) return;
-    setRec({ ...EMPTY, ...r, i18n: { en: {}, ru: {}, ...r.i18n } });
-    setDataText(JSON.stringify(r.data ?? {}, null, 2));
+    const loaded: ContentRecord = { ...EMPTY, ...r, i18n: { en: {}, ru: {}, ...r.i18n } };
+    const loadedText = JSON.stringify(r.data ?? {}, null, 2);
+    setRec(loaded);
+    setDataText(loadedText);
+    takeSnapshot(loaded, loadedText);
     setFreeText(splitTags(r.tags ?? []).free.join(', '));
     // Открыть локаль, в которой реально есть текст (автор мог заполнить только RU).
     const hasText = (loc: Locale) =>
@@ -81,6 +87,50 @@ export function EditPage() {
   useEffect(() => {
     if (query.error) toast.error((query.error as Error).message);
   }, [query.error, toast]);
+
+  // Снимок сохранённого состояния для dirty-check. Берётся после реальной
+  // загрузки записи (не с EMPTY) и обновляется после успешного save().
+  // Текущее состояние формы дублируем в ref: блокер роутера вызывает функцию
+  // из последнего рендера, а save() делает navigate синхронно, до ре-рендера —
+  // через замыкание он увидел бы устаревший dirty и заблокировал свой же переход.
+  const snapRef = useRef<{ rec: string; dataText: string } | null>(null);
+  const formRef = useRef({ rec, dataText });
+  formRef.current = { rec, dataText };
+  function takeSnapshot(r: ContentRecord, dt: string) {
+    snapRef.current = { rec: JSON.stringify(r), dataText: dt };
+  }
+  // «Чистая точка» здесь и сейчас: снимок + актуальная форма (перед navigate).
+  function markClean(r: ContentRecord, dt: string) {
+    formRef.current = { rec: r, dataText: dt };
+    takeSnapshot(r, dt);
+  }
+  function isDirty(): boolean {
+    const snap = snapRef.current;
+    if (!snap) return false;
+    const f = formRef.current;
+    return JSON.stringify(f.rec) !== snap.rec || f.dataText !== snap.dataText;
+  }
+  const dirty = isDirty();
+
+  // Закрытие/перезагрузка вкладки с несохранёнными правками — штатный диалог браузера.
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [dirty]);
+
+  // Навигация внутри SPA (ссылки шапки, «Список» и т.п.) — спрашиваем сами.
+  const blocker = useBlocker(({ currentLocation, nextLocation }) =>
+    isDirty() && currentLocation.pathname !== nextLocation.pathname);
+  useEffect(() => {
+    if (blocker.state !== 'blocked') return;
+    if (window.confirm('Есть несохранённые изменения. Уйти без сохранения?')) blocker.proceed();
+    else blocker.reset();
+  }, [blocker]);
 
   const prose = (path: string) => getAt(rec.i18n[locale] ?? {}, path);
   function setProse(path: string, val: string) {
@@ -146,9 +196,17 @@ export function EditPage() {
       const saved = await saveMut.mutateAsync({ id, isNew, rec: { ...rec, data } });
       if (isNew) {
         seededRef.current = saved.id;
-        setRec({ ...EMPTY, ...saved, i18n: { en: {}, ru: {}, ...saved.i18n } });
-        setDataText(JSON.stringify(saved.data ?? {}, null, 2));
+        const next: ContentRecord = { ...EMPTY, ...saved, i18n: { en: {}, ru: {}, ...saved.i18n } };
+        const nextText = JSON.stringify(saved.data ?? {}, null, 2);
+        setRec(next);
+        setDataText(nextText);
+        // Чистая точка — ДО navigate, иначе блокер сработает на наш собственный переход.
+        markClean(next, nextText);
         navigate(`/edit/${encodeURIComponent(saved.id)}`, { replace: true });
+      } else {
+        // Сохранено ровно то, что было в форме на момент клика: это и есть
+        // новая «чистая» точка (правки, сделанные пока шёл запрос, останутся dirty).
+        takeSnapshot(rec, dataText);
       }
       toast.success('Сохранено');
     } catch (e) { toast.error((e as Error).message); }
@@ -185,7 +243,11 @@ export function EditPage() {
 
   async function del() {
     if (!window.confirm('Удалить запись безвозвратно?')) return;
-    try { await delMut.mutateAsync(id); navigate('/'); }
+    try {
+      await delMut.mutateAsync(id);
+      markClean(rec, dataText);   // удаление уже подтверждено — блокер не нужен
+      navigate('/');
+    }
     catch (e) { toast.error((e as Error).message); }
   }
 
@@ -383,7 +445,12 @@ export function EditPage() {
       </section>
 
       <div className="flex gap-2.5 mt-[18px]">
-        <button className="primary" onClick={() => void save()} disabled={busy}>
+        <button
+          className="primary"
+          onClick={() => void save()}
+          disabled={busy || !parsedData}
+          title={parsedData ? undefined : 'Невалидный JSON в поле механики'}
+        >
           {busy ? '…' : 'Сохранить'}
         </button>
         {!isNew && <button className="danger" onClick={() => void del()}>Удалить</button>}

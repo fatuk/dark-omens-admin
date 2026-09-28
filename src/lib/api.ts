@@ -1,6 +1,8 @@
 // Клиент relay admin API. База и admin-key хранятся в localStorage (вводятся в
 // шапке). Все запросы шлют x-admin-key. Работает только на клиенте.
 
+import { useSyncExternalStore } from 'react';
+
 import type { ContentRecord, ContentListItem, Locale, LocaleText } from './types';
 
 const LS_BASE = 'doa_api_base';
@@ -15,6 +17,7 @@ export function getApiBase(): string {
 }
 export function setApiBase(v: string): void {
   localStorage.setItem(LS_BASE, v.trim());
+  notifySettings();
 }
 export function getAdminKey(): string {
   if (typeof window === 'undefined') return '';
@@ -22,6 +25,47 @@ export function getAdminKey(): string {
 }
 export function setAdminKey(v: string): void {
   localStorage.setItem(LS_KEY, v.trim());
+  notifySettings();
+}
+
+// ── Подписка на настройки подключения ────────────────────────────────────────
+// Шапка пишет base/key в localStorage, а остальному дереву (guard в Layout)
+// нужно узнать об этом без перезагрузки страницы. Снимок кэшируем: для
+// useSyncExternalStore getSnapshot обязан возвращать один и тот же объект,
+// пока значения не менялись, иначе React уйдёт в бесконечный ре-рендер.
+
+export interface ConnSettings {
+  base: string;
+  key: string;
+}
+
+let connSnapshot: ConnSettings = { base: getApiBase(), key: getAdminKey() };
+const settingsSubs = new Set<() => void>();
+
+export function getConnSettings(): ConnSettings {
+  return connSnapshot;
+}
+
+export function subscribeSettings(fn: () => void): () => void {
+  settingsSubs.add(fn);
+  return () => settingsSubs.delete(fn);
+}
+
+function notifySettings(): void {
+  const next = { base: getApiBase(), key: getAdminKey() };
+  if (next.base === connSnapshot.base && next.key === connSnapshot.key) return;
+  connSnapshot = next;
+  for (const fn of settingsSubs) fn();
+}
+
+/** Реактивные base/key: ре-рендер при «Сохранить» в шапке. */
+export function useConnSettings(): ConnSettings {
+  return useSyncExternalStore(subscribeSettings, getConnSettings, getConnSettings);
+}
+
+/** Локальный relay (dev) работает без admin-key — на нём guard не нужен. */
+export function isLocalApiBase(base: string): boolean {
+  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(base.trim());
 }
 
 // ── Счётчик запросов «в полёте» ───────────────────────────────────────────────
