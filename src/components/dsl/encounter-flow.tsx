@@ -54,7 +54,12 @@ interface TestData extends Record<string, unknown> {
   skills: string[];
   label?: string;
   hasInput?: boolean;
+  /** Плоская карта может быть без проверки (выбор/торг): тогда data.test нет, движок
+   *  применяет ветку успеха сразу. У стадий gate/mystery проверка обязательна. */
+  allowNoTest?: boolean;
+  noTest?: boolean;
   onPatch: (p: Partial<{ skill: string; modifier: number }>) => void;
+  onToggleNoTest?: (noTest: boolean) => void;
 }
 
 function TestNode(props: NodeProps): JSX.Element {
@@ -63,16 +68,24 @@ function TestNode(props: NodeProps): JSX.Element {
     <div className="rf-node">
       {d.hasInput && <Handle type="target" position={Position.Left} />}
       <div className="rf-node-title">{d.label ?? 'Проверка'}</div>
-      <div className="flex gap-1.5 items-center">
-        <select
-          className="nodrag"
-          value={d.skill}
-          onChange={(e) => d.onPatch({ skill: e.target.value })}
-        >
-          {d.skills.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <NumField value={d.modifier} onChange={(n) => d.onPatch({ modifier: n })} />
-      </div>
+      {d.allowNoTest && (
+        <label className="nodrag flex gap-1 items-center text-[11px]" title="Кубов нет: эффекты ветки «Успех» применяются сразу по «Завершить»; выбор/торг — внутри эффектов">
+          <input type="checkbox" checked={!!d.noTest} onChange={(e) => d.onToggleNoTest?.(e.target.checked)} />
+          без проверки
+        </label>
+      )}
+      {!d.noTest && (
+        <div className="flex gap-1.5 items-center">
+          <select
+            className="nodrag"
+            value={d.skill}
+            onChange={(e) => d.onPatch({ skill: e.target.value })}
+          >
+            {d.skills.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <NumField value={d.modifier} onChange={(n) => d.onPatch({ modifier: n })} />
+        </div>
+      )}
       <Handle type="source" position={Position.Right} id="pass" style={{ top: 34, background: '#4db870' }} />
       <Handle type="source" position={Position.Right} id="fail" style={{ top: 58, background: '#c8643a' }} />
     </div>
@@ -147,9 +160,14 @@ export function EncounterFlow(
     const tNode = (
       id: string, x: number, y: number, label: string, hasInput: boolean,
       t: Test | undefined, onPatch: (p: Partial<Test>) => void,
+      onToggleNoTest?: (noTest: boolean) => void,
     ): Node => ({
       id, type: 'test', position: { x, y }, draggable: false,
-      data: { skill: t?.skill ?? skills[0], modifier: t?.modifier ?? 0, skills, label, hasInput, onPatch },
+      data: {
+        skill: t?.skill ?? skills[0], modifier: t?.modifier ?? 0, skills, label, hasInput, onPatch,
+        allowNoTest: onToggleNoTest !== undefined, noTest: onToggleNoTest !== undefined && t === undefined,
+        onToggleNoTest,
+      },
     });
     const eNode = (
       id: string, x: number, y: number, title: string, accent: 'green' | 'red',
@@ -197,7 +215,15 @@ export function EncounterFlow(
       const d = parsed;
       const nodes: Node[] = [
         tNode('test', 0, 60, 'Проверка', false, d.test,
-          (p) => patch({ ...d, test: { ...d.test, ...p } })),
+          (p) => patch({ ...d, test: { skill: skills[0], modifier: 0, ...d.test, ...p } }),
+          (noTest) => {
+            // Снять проверку — убрать data.test целиком (не пустой объект: движок смотрит
+            // на его наличие); вернуть — навык по умолчанию и модификатор 0.
+            const next = { ...d } as Record<string, unknown>;
+            if (noTest) delete next['test'];
+            else next['test'] = { skill: skills[0], modifier: 0 };
+            patch(next as typeof d);
+          }),
         eNode('ok', 320, 0, '✓ Успех', 'green', d.onSuccess, (e) => patch({ ...d, onSuccess: e })),
         eNode('fail', 320, 220, '✗ Провал', 'red', d.onFailure, (e) => patch({ ...d, onFailure: e })),
       ];
