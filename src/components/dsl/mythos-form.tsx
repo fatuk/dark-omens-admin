@@ -107,6 +107,55 @@ export function MythosForm(
               />
               {' '}Развеять Слух, когда жетоны истекли (solveOnExpire)
             </label>
+            {String(solve['kind'] ?? 'gateClose') === 'encounter' && (
+              <div className="flex gap-3 items-center flex-wrap">
+                <label className="dsl-field" title="Плата за попытку (списывается при любом исходе); без неё встреча бесплатна">
+                  за попытку:{' '}
+                  <select value={String((solve['cost'] as Obj | undefined)?.['spend'] ?? '')}
+                    onChange={(e) => {
+                      const spend = e.target.value;
+                      const next = { ...solve };
+                      if (spend) next['cost'] = { spend, amount: Number((solve['cost'] as Obj | undefined)?.['amount'] ?? 1) };
+                      else delete next['cost'];
+                      patchRumor({ ...rumor, solve: next });
+                    }}>
+                    <option value="">бесплатно</option>
+                    {['clue', 'health', 'sanity', 'focus'].map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                  <input type="number" className="w-12" min={1}
+                    value={Number((solve['cost'] as Obj | undefined)?.['amount'] ?? 1)}
+                    disabled={!(solve['cost'] as Obj | undefined)?.['spend']}
+                    onChange={(e) => patchRumor({ ...rumor, solve: { ...solve, cost: { ...(solve['cost'] as Obj), amount: Math.max(1, Number(e.target.value) || 1) } } })} />
+                </label>
+                <label className="dsl-field" title="Сколько успехов встречи нужно суммарно, чтобы развеять Слух">
+                  успехов:{' '}
+                  <input type="number" className="w-12" min={1} value={Number(solve['progress'] ?? 1)}
+                    onChange={(e) => patchRumor({ ...rumor, solve: { ...solve, progress: Math.max(1, Number(e.target.value) || 1) } })} />
+                </label>
+              </div>
+            )}
+            <label className="dsl-check" title="Одноразовый эффект, когда до пробуждения осталось ≤ N делений Рока (doomClock − doom)">
+              <input type="checkbox" checked={!!rumor['doomTrigger']}
+                onChange={(e) => {
+                  const next = { ...rumor };
+                  if (e.target.checked) next['doomTrigger'] = { remainingAtMost: 4, effect: [] };
+                  else delete next['doomTrigger'];
+                  patchRumor(next);
+                }} />
+              {' '}Срабатывает, когда до пробуждения осталось ≤ N (doomTrigger)
+            </label>
+            {!!rumor['doomTrigger'] && (() => {
+              const dt = rumor['doomTrigger'] as Obj;
+              return (
+                <div>
+                  <label className="dsl-field">N:{' '}
+                    <input type="number" className="w-12" min={0} value={Number(dt['remainingAtMost'] ?? 4)}
+                      onChange={(e) => patchRumor({ ...rumor, doomTrigger: { ...dt, remainingAtMost: Math.max(0, Number(e.target.value) || 0) } })} />
+                  </label>
+                  <EffectList value={(dt['effect'] as Eff[]) ?? []} onChange={(e) => patchRumor({ ...rumor, doomTrigger: { ...dt, effect: e } })} {...listProps} />
+                </div>
+              );
+            })()}
             <div className="prose-group-title">Расплата Слуха (onReckoning) — по умолчанию «снять 1 жетон с карты»</div>
             <EffectList value={(rumor['onReckoning'] as Eff[]) ?? []} onChange={(e) => patchRumor({ ...rumor, onReckoning: e })} {...listProps} />
             <div className="prose-group-title">Когда жетонов на карте 0 (onExpire)</div>
