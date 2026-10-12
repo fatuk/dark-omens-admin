@@ -149,8 +149,14 @@ function HookNode(props: NodeProps): JSX.Element {
         </label>
       )}
 
-      <label className="mt-1">Эффект</label>
+      <label className="mt-1">{test ? 'Эффект при успехе (cost списывается)' : 'Эффект'}</label>
       <EffectList value={(h['effect'] as Eff[]) ?? []} onChange={(e) => set({ effect: e })} verbs={d.verbs} verbDefs={d.verbDefs} targetGroups={d.targetGroups} locations={d.locations} targets={d.targets} refOptions={d.refOptions} />
+      {test && (
+        <>
+          <label className="mt-1">Эффект при провале (onFail, cost не списывается)</label>
+          <EffectList value={(h['onFail'] as Eff[]) ?? []} onChange={(e) => set({ onFail: e.length ? e : undefined })} verbs={d.verbs} verbDefs={d.verbDefs} targetGroups={d.targetGroups} locations={d.locations} targets={d.targets} refOptions={d.refOptions} />
+        </>
+      )}
     </div>
   );
 }
