@@ -32,6 +32,8 @@ interface SolveData extends Record<string, unknown> {
   kind: string; n: number; perPlayer: number; kinds: string[];
   locs: string[]; onLocs: (ids: string[]) => void;
   onPatch: (p: Obj) => void;
+  monster: string;
+  after: Obj; onAfter: (p: Obj) => void;
 }
 function SolveNode(props: NodeProps): JSX.Element {
   const d = props.data as unknown as SolveData;
@@ -41,7 +43,19 @@ function SolveNode(props: NodeProps): JSX.Element {
       <div className="rf-node-title">Тайна — финал (solveCondition)</div>
       <label>Условие (kind)</label>
       <Combobox value={d.kind} options={d.kinds} onChange={(v) => d.onPatch({ kind: v })} />
-      {d.kind === 'tokensOnCard' ? (
+      {d.kind === 'epicDefeated' ? (
+        <>
+          <label className="mt-1" title="id монстра (data/monsters.json), чья гибель решает Тайну">монстр (solveCondition.monster)</label>
+          <input className="w-full nodrag" value={d.monster} placeholder="elder"
+            onChange={(e) => d.onPatch({ monster: e.target.value || undefined })} />
+          <label className="mt-1" title="После гибели — особая встреча владельцу предмета holderOf (нет такого — победителю); карты с этим тегом; повторяется каждый ход до solveMystery в ветке успеха. Пусто — Тайна решается сразу.">после гибели: тег особых встреч</label>
+          <input className="w-full nodrag" value={String(d.after['encounterTag'] ?? '')} placeholder="demo-final"
+            onChange={(e) => d.onAfter({ encounterTag: e.target.value || undefined })} />
+          <label className="mt-1">владелец предмета (holderOf)</label>
+          <input className="w-full nodrag" value={String(d.after['holderOf'] ?? '')} placeholder="sheaf"
+            onChange={(e) => d.onAfter({ holderOf: e.target.value || undefined })} />
+        </>
+      ) : d.kind === 'tokensOnCard' ? (
         <>
           <label className="mt-1">perPlayer</label>
           <input type="number" step="0.5" className="w-16" value={d.perPlayer}
@@ -219,6 +233,13 @@ export function MysteryFlow(
       data: {
         kind: String(sc['kind'] ?? 'cluesOnCard'), n: Number(sc['n'] ?? 1), perPlayer: Number(sc['perPlayer'] ?? 0.5),
         kinds: solveKinds,
+        monster: String(sc['monster'] ?? ''),
+        after: (d['afterDefeat'] ?? {}) as Obj,
+        onAfter: (p: Obj) => {
+          const next = { ...((d['afterDefeat'] ?? {}) as Obj), ...p };
+          for (const k of Object.keys(next)) if (next[k] === undefined) delete next[k];
+          patch({ ...d, afterDefeat: Object.keys(next).length ? next : undefined });
+        },
         locs: Array.isArray(d['locations']) ? (d['locations'] as unknown[]).map(String) : [],
         onLocs: (ids: string[]) => patch({ ...d, locations: ids }),
         onPatch: (p: Obj) => patch({ ...d, solveCondition: { ...sc, ...p } }),

@@ -35,7 +35,7 @@ export const VERB_RU: Record<string, string> = {
   closeGate: 'закрыть врата', openGate: 'открыть врата', discardGate: 'сбросить врата',
   spawnMonster: 'монстр', discardMonster: 'сбросить монстра', defeatMonster: 'победить монстра', damageMonster: 'урон монстру',
   moveMonster: 'переместить монстра',
-  flipBack: 'карту на лицо', stayFlipped: 'карта остаётся перевёрнутой',
+  flipBack: 'карту на лицо', stayFlipped: 'карта остаётся перевёрнутой', solveMystery: 'решить Тайну',
   advanceDoom: 'рок +', retreatDoom: 'рок −', advanceOmen: 'знамение', becomeDelayed: 'задержан',
   move: 'переместить', gainTicket: 'билет +', loseTicket: 'билет −', extraAction: 'доп. действие',
   placeClue: 'улика на поле', placeEldritchToken: 'жетон Знамения', text: 'текст',
