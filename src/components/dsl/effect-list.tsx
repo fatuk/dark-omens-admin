@@ -280,6 +280,13 @@ export function EffectList(
                 {tOpts.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             )}
+            {e['target'] === 'eachOnSpace' && locations && (
+              <select value={String(e['location'] ?? '')} title="Клетка: сыщика-якоря или конкретная (Расплата Тайны «на поле»)"
+                onChange={(ev) => patch(i, { location: ev.target.value || undefined })}>
+                <option value="">клетка сыщика</option>
+                {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </select>
+            )}
             {allowCost && (() => {
               // Цена опции: потратить ресурс, чтобы выбрать эту ветку choice
               // ({cost:{spend,amount}}). spend='' → узел без цены (чистый {do}).

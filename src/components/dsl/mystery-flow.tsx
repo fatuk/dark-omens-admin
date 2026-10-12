@@ -75,7 +75,7 @@ function OnEnterNode(props: NodeProps): JSX.Element {
   const d = props.data as unknown as OnEnterData;
   return (
     <div className="rf-node nodrag nopan" style={{ minWidth: 240 }}>
-      <div className="rf-node-title">При активации (onEnter)</div>
+      <div className="rf-node-title">{String(d['title'] ?? 'При активации (onEnter)')}</div>
       <EffectList value={d.effects} onChange={d.onEffects} verbs={d.verbs} verbDefs={d.verbDefs} targetGroups={d.targetGroups} locations={d.locations} targets={d.targets} refOptions={d.refOptions} />
     </div>
   );
@@ -193,6 +193,11 @@ export function MysteryFlow(
       {
         id: 'onenter', type: 'onenter', position: { x: 0, y: -220 }, draggable: false,
         data: { effects: (d['onEnter'] as Eff[]) ?? [], verbs, verbDefs, targetGroups, locations, targets, refOptions, onEffects: (e: Eff[]) => patch({ ...d, onEnter: e }) },
+      },
+      {
+        // Расплата Тайны: каждую Расплату, пока Тайна активна (тир после Древнего).
+        id: 'onreckoning', type: 'onenter', position: { x: 580, y: -220 }, draggable: false,
+        data: { title: 'Расплата Тайны (onReckoning) — пока активна', effects: (d['onReckoning'] as Eff[]) ?? [], verbs, verbDefs, targetGroups, locations, targets, refOptions, onEffects: (e: Eff[]) => patch({ ...d, onReckoning: e }) },
       },
     ];
     hooks.forEach((h, i) => nodes.push({
