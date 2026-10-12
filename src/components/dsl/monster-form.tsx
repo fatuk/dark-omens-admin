@@ -6,6 +6,7 @@
 // Тексты (имя, описание способности) правятся в панели «Тексты» — здесь они
 // живут ключами перевода и намеренно не редактируются.
 import { useMemo } from 'react';
+import { NumField } from '@/components/num-field';
 import type { Meta } from '@/lib/api';
 import { EffectList } from '@/components/dsl/effect-list';
 
@@ -134,18 +135,18 @@ export function MonsterForm(
             {/* Эпик не попадает в чашу: его призывает конкретная карта Мифов. */}
             Эпический (спавнится поимённо, не из чаши)
           </label>
-          <label className="dsl-check">
-            <input
-              type="checkbox"
-              checked={d['toughnessPerInvestigator'] === 1}
-              onChange={() => {
+          <label className="flex gap-1 items-center" title="Стойкость += ceil(это × число сыщиков). 0.5 — «+1 за каждых двух», 0 — не масштабируется">
+            + за сыщика
+            <NumField
+              value={Number(d['toughnessPerInvestigator'] ?? 0)}
+              step={0.5}
+              min={0}
+              onChange={(n) => {
                 const next = { ...d };
-                if (next['toughnessPerInvestigator']) delete next['toughnessPerInvestigator'];
-                else next['toughnessPerInvestigator'] = 1;
+                if (n > 0) next['toughnessPerInvestigator'] = n; else delete next['toughnessPerInvestigator'];
                 patch(next);
               }}
             />
-            Стойкость за каждого сыщика
           </label>
         </div>
       </div>

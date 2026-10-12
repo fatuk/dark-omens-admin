@@ -37,6 +37,9 @@ export function AncientForm(
   // NB: «Локации Тайн» у Древнего УБРАНЫ — их задаёт сама карта Тайны (поле «Локации»
   // в форме Тайны). Древний больше не определяет, где лежат жетоны/улики.
 
+  const cultist = (d['cultist'] ?? {}) as Obj;
+  const setCultist = (p: Obj): void => patch({ ...d, cultist: { ...cultist, ...p } });
+
   const md = (d['mythosDeck'] ?? {}) as Obj;
   const mdByAct = (md['byAct'] ?? {}) as Obj;
   const setMd = (act: string, color: string, n: number): void => {
@@ -54,6 +57,32 @@ export function AncientForm(
       <div className="prose-group">
         <div className="prose-group-title">Расплата Древнего (onReckoning) — первый тир каждой Расплаты</div>
         <EffectList value={(d['onReckoning'] as Eff[]) ?? []} onChange={(e) => patch({ ...d, onReckoning: e })} {...listProps} />
+      </div>
+
+      <div className="prose-group">
+        <div className="prose-group-title">Культист (cultist) — статы и Расплата монстра «Культист» для этого Древнего</div>
+        <div className="rf-note">Монстр с useAncientOne берёт отсюда стойкость, ужас, бой и Расплату. Пусто — базовый культист (1 / Воля 0 → 1 / Сила 0 → 1, без Расплаты).</div>
+        <div className="flex gap-3 items-center flex-wrap">
+          <label className="flex gap-1 items-center">стойкость
+            <NumField value={Number(cultist['toughness'] ?? 1)} onChange={(n) => setCultist({ toughness: n })} min={1} />
+          </label>
+          {(['horror', 'combat'] as const).map((part) => {
+            const o = (cultist[part] ?? {}) as Obj;
+            const setPart = (p: Obj): void => setCultist({ [part]: { ...o, ...p } });
+            return (
+              <span key={part} className="flex gap-1 items-center">
+                {part === 'horror' ? 'ужас' : 'бой'}
+                <select value={String(o['skill'] ?? (part === 'horror' ? 'will' : 'strength'))} onChange={(e) => setPart({ skill: e.target.value })}>
+                  {(meta?.dsl?.skills ?? ['will', 'strength']).map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <NumField value={Number(o['modifier'] ?? 0)} onChange={(n) => setPart({ modifier: n })} />
+                → урон <NumField value={Number(o['damage'] ?? 1)} onChange={(n) => setPart({ damage: n })} min={0} />
+              </span>
+            );
+          })}
+        </div>
+        <div className="prose-group-title">Расплата культиста (cultist.onReckoning) — за КАЖДОГО культиста на поле</div>
+        <EffectList value={(cultist['onReckoning'] as Eff[]) ?? []} onChange={(e) => setCultist({ onReckoning: e })} {...listProps} />
       </div>
 
       <div className="prose-group">
