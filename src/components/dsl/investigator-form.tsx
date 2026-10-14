@@ -10,7 +10,9 @@
 //     то, что не сработает;
 //   • спец-действие бывает ДВУХ видов — обычная DSL-программа (`do`) либо
 //     встроенный вид (`kind`) для действий, которым нужен ввод игрока и которые
-//     в данных не выражаются («потратить здоровье, восстановить рассудок»).
+//     в данных не выражаются («потратить здоровье, восстановить рассудок»);
+//   • у пассива три слоя: mods (модификаторы проверок), triggers (события —
+//     правятся в JSON) и whileOwned immuneTo (иммунитеты, «если не выбрал сам»).
 import { useMemo } from 'react';
 import type { Meta } from '@/lib/api';
 import { EffectList } from '@/components/dsl/effect-list';
@@ -39,7 +41,12 @@ const ROLE_RU: Record<string, string> = {
 const ABILITY_KINDS = [
   { value: '', label: 'Программа DSL (do)' },
   { value: 'convertVitality', label: 'Обмен здоровья и рассудка (ввод игрока)' },
+  { value: 'strikeMonster', label: 'Вы и 1 монстр на клетке теряете по 1 здоровью (выбор монстра)' },
 ];
+
+/** Иммунитет пассива: статус «Задержка» плюс любое состояние по id. */
+const IMMUNE_DELAYED = 'delayed';
+const immuneLabel = (s: string): string => (s === IMMUNE_DELAYED ? 'Задержка (Delayed)' : s);
 
 /** Глаголы, которые пассив реально умеет применить к проверке. */
 const PASSIVE_VERBS = [
@@ -77,6 +84,22 @@ export function InvestigatorForm(
     ? d['startingTickets'] as Obj : {});
   const ability = (d['ability'] && typeof d['ability'] === 'object' ? d['ability'] as Obj : null);
   const passive = (d['passive'] && typeof d['passive'] === 'object' ? d['passive'] as Obj : null);
+  // Иммунитеты пассива — узлы whileOwned {do:"immuneTo", status}. Прочие узлы
+  // whileOwned (если появятся) не трогаем — сохраняем как есть.
+  const whileOwned = passive && Array.isArray(passive['whileOwned'])
+    ? (passive['whileOwned'] as Obj[]) : [];
+  const immunities = whileOwned
+    .filter((n) => n['do'] === 'immuneTo')
+    .map((n) => String(n['status'] ?? ''));
+  const setImmunities = (list: string[]): void => {
+    if (!passive) return;
+    const rest = whileOwned.filter((n) => n['do'] !== 'immuneTo');
+    const nodes = [...rest, ...list.map((st) => ({ do: 'immuneTo', status: st }))];
+    const p: Obj = { ...passive };
+    if (nodes.length) p['whileOwned'] = nodes; else delete p['whileOwned'];
+    patch({ ...d, passive: p });
+  };
+  const kindKnown = !ability || ABILITY_KINDS.some((k) => k.value === String(ability['kind'] ?? ''));
 
   const listProps = {
     verbDefs: meta?.dsl?.verbs,
@@ -290,6 +313,11 @@ export function InvestigatorForm(
                 }}
               >
                 {ABILITY_KINDS.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
+                {/* Вид, которого форма не знает, — показываем как есть, а не подменяем
+                    первым пунктом (иначе выглядело бы «Программа DSL» без программы). */}
+                {!kindKnown && (
+                  <option value={String(ability['kind'])}>{String(ability['kind'])} (неизвестный вид)</option>
+                )}
               </select>
             </div>
           )}
@@ -305,7 +333,7 @@ export function InvestigatorForm(
       </div>
 
       <div className="prose-group">
-        <div className="prose-group-title">Пассив — постоянный модификатор проверок</div>
+        <div className="prose-group-title">Пассив — модификаторы проверок, иммунитеты, триггеры</div>
         <div className="row">
           <div>
             <label>Есть ли</label>
@@ -314,7 +342,7 @@ export function InvestigatorForm(
               onChange={(e) => {
                 const next = { ...d };
                 if (e.target.value === 'no') delete next['passive'];
-                else next['passive'] = { name: '', text: '', mods: [] };
+                else next['passive'] = { name: '', text: '' };
                 patch(next);
               }}
             >
@@ -325,6 +353,7 @@ export function InvestigatorForm(
         </div>
         {passive && (
           <>
+            <label>Модификаторы проверок</label>
             <EffectList
               {...listProps}
               verbs={PASSIVE_VERBS}
@@ -335,6 +364,30 @@ export function InvestigatorForm(
                 patch({ ...d, passive: p });
               }}
             />
+            <label>Иммунитеты — не действуют, если игрок выбрал это сам</label>
+            <div className="flex gap-1.5 flex-wrap items-center">
+              {immunities.map((st) => (
+                <button
+                  key={st}
+                  type="button"
+                  title="Убрать иммунитет"
+                  onClick={() => setImmunities(immunities.filter((x) => x !== st))}
+                >
+                  {immuneLabel(st)} ×
+                </button>
+              ))}
+              <select
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) setImmunities([...immunities, e.target.value]);
+                }}
+              >
+                <option value="">+ иммунитет</option>
+                {[IMMUNE_DELAYED, ...(meta?.dsl?.conditions ?? [])]
+                  .filter((st) => !immunities.includes(st))
+                  .map((st) => <option key={st} value={st}>{immuneLabel(st)}</option>)}
+              </select>
+            </div>
             {Array.isArray(passive['triggers']) && (passive['triggers'] as unknown[]).length > 0 && (
               <div className="rf-note">
                 У пассива есть триггеры на события ({(passive['triggers'] as Obj[])
