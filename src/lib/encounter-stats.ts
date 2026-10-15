@@ -39,6 +39,10 @@ export const VERB_RU: Record<string, string> = {
   advanceDoom: 'рок +', retreatDoom: 'рок −', advanceOmen: 'знамение', becomeDelayed: 'задержан',
   move: 'переместить', gainTicket: 'билет +', loseTicket: 'билет −', extraAction: 'доп. действие',
   placeClue: 'улика на поле', placeEldritchToken: 'жетон Знамения', text: 'текст',
+  // Мифы
+  monsterSurge: 'всплеск монстров', resolveReckoning: 'Расплата', loseGame: 'поражение',
+  discardEldritchToken: 'снять жетон Знамения', toughenMonster: 'усилить монстра',
+  checkModifier: 'модификатор проверок', discardAllClues: 'сбросить все улики',
 };
 
 const REWARD = new Set([
@@ -50,6 +54,7 @@ const PENALTY = new Set([
   'loseClue', 'spendClue', 'loseAsset', 'loseSpell', 'loseArtifact', 'loseAllPossessions', 'loseHealth', 'loseSanity',
   'loseFocus', 'loseResource', 'gainCondition', 'impairSkill', 'loseImprovement', 'openGate', 'spawnMonster',
   'advanceDoom', 'advanceOmen', 'becomeDelayed', 'loseTicket', 'placeEldritchToken', 'discardAllClues',
+  'monsterSurge', 'toughenMonster', 'loseGame',
 ]);
 
 export type EffectClass = 'reward' | 'penalty' | 'neutral';

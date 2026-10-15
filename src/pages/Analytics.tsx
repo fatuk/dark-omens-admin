@@ -1,11 +1,12 @@
-// Массовая аналитика встреч: фильтр по осям (вид / статус / сезон / Древний /
+// Массовая аналитика: вкладки «Встречи» и «Мифы» (см. MythosAnalytics).
+// Встречи: фильтр по осям (вид / статус / сезон / Древний /
 // тип локации / Иной мир / акт / тег / название) → сводка: сколько проверок и
 // каких, распределение модификаторов, какие награды и штрафы и в каких ветках.
 // Внизу — таблица встреч под фильтром с грубой «щедростью/жёсткостью» для ручного
 // разбора. Считается на клиенте из полных записей (/admin/content/bulk).
 
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
 import { listContentBulk } from '@/lib/api';
@@ -16,6 +17,7 @@ import {
   computeStats, SKILL_RU, VERB_RU, type EncounterRow, type EffectClass,
 } from '@/lib/encounter-stats';
 import { SortableTh, sortRows, useTableSort } from '@/components/sortable-th';
+import { MythosAnalytics } from '@/components/MythosAnalytics';
 import type { ContentRecord } from '@/lib/types';
 
 const LS_KEY = 'doa_analytics_filters';
@@ -71,6 +73,21 @@ function ClassBadge({ cls }: { cls: EffectClass }) {
 }
 
 export function AnalyticsPage() {
+  const [params, setParams] = useSearchParams();
+  const tab = params.get('tab') === 'mythos' ? 'mythos' : 'encounters';
+  return (
+    <div className="container">
+      <div className="row" style={{ gap: 6, marginBottom: 8 }}>
+        <button className={tab === 'encounters' ? 'primary' : ''} onClick={() => setParams({})}>Встречи</button>
+        <button className={tab === 'mythos' ? 'primary' : ''} onClick={() => setParams({ tab: 'mythos' })}>Мифы</button>
+      </div>
+      <h2>{tab === 'mythos' ? 'Аналитика Мифов' : 'Аналитика встреч'}</h2>
+      {tab === 'mythos' ? <MythosAnalytics /> : <EncounterAnalytics />}
+    </div>
+  );
+}
+
+function EncounterAnalytics() {
   const { data: meta } = useMeta();
   const { data, isLoading, error } = useQuery({
     queryKey: ['content', 'bulk', 'encounter'],
@@ -112,15 +129,14 @@ export function AnalyticsPage() {
     return (r as unknown as Record<string, unknown>)[key];
   }), [stats.rows, sort]);
 
-  if (isLoading) return <div className="container">Загрузка встреч…</div>;
-  if (error) return <div className="container danger">{String((error as Error).message)}</div>;
+  if (isLoading) return <div>Загрузка встреч…</div>;
+  if (error) return <div className="danger">{String((error as Error).message)}</div>;
 
   const kinds = meta?.encounterKinds ?? ['general', 'research', 'gate', 'mystery'];
   const totalVerbs = stats.verbs.reduce((s, v) => s + v.success.count + v.failure.count, 0);
 
   return (
-    <div className="container">
-      <h2>Аналитика встреч</h2>
+    <>
       <div className="hint">
         Проверки и эффекты веток по всем встречам под фильтром. У gate/mystery считаются все три
         слота (стадия 1, ветка успеха, ветка провала). «Награда» — в ветке успеха, «штраф» — в любой.
@@ -270,6 +286,6 @@ export function AnalyticsPage() {
           </tbody>
         </table>
       </div>
-    </div>
+    </>
   );
 }
