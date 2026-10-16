@@ -23,6 +23,7 @@ import { MythosForm } from '@/components/dsl/mythos-form';
 import { AncientForm } from '@/components/dsl/ancient-form';
 import { useToast } from '@/components/toast';
 import { EncounterAnalysis } from '@/components/EncounterAnalysis';
+import { MythosCardAnalysis } from '@/components/MythosCardAnalysis';
 
 const EMPTY: ContentRecord = {
   id: '', type: 'encounter', kind: 'general', status: 'draft', tags: [],
@@ -255,15 +256,23 @@ export function EditPage() {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
     <div className="min-w-0">
       <h2>{isNew ? 'Новая запись' : `Правка: ${getAt(rec.i18n.en, 'name') || id}`}</h2>
-      {rec.type === 'encounter' && (
+      {(rec.type === 'encounter' || rec.type === 'mythos') && (
         <button type="button" onClick={() => setShowAnalysis((v) => !v)} style={{ marginBottom: 12 }}>
-          {showAnalysis ? 'Скрыть анализ' : '📊 Анализ встречи'}
+          {showAnalysis ? 'Скрыть анализ' : rec.type === 'mythos' ? '📊 Анализ карты Мифа' : '📊 Анализ встречи'}
         </button>
       )}
       {/* Живой анализ: механика — из буфера конструктора (dataText), а не из сохранённой
           записи, чтобы подбирать награды/штрафы без «сохранить и перезагрузить».
           Невалидный JSON в буфере → считаем по последней валидной data и предупреждаем. */}
-      {showAnalysis && (
+      {showAnalysis && rec.type === 'mythos' && (
+        <MythosCardAnalysis
+          rec={parsedData ? { ...rec, data: parsedData } : rec}
+          stale={parsedData === null}
+          meta={meta}
+          onClose={() => setShowAnalysis(false)}
+        />
+      )}
+      {showAnalysis && rec.type === 'encounter' && (
         <EncounterAnalysis
           rec={parsedData ? { ...rec, data: parsedData } : rec}
           stale={parsedData === null}

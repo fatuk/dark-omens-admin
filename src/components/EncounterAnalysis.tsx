@@ -15,7 +15,7 @@ import { SKILL_RU, VERB_RU, classify, slotsOf, titleOf, type Slot } from '@/lib/
 // Данные — полные записи через /admin/content/bulk (кэш react-query общий с аналитикой).
 
 const PASS_PER_DIE = 1 / 3;                 // d6, успех на 5–6
-const passProb = (pool: number): number => 1 - Math.pow(1 - PASS_PER_DIE, Math.max(1, pool));
+export const passProb = (pool: number): number => 1 - Math.pow(1 - PASS_PER_DIE, Math.max(1, pool));
 const pct = (x: number): string => `${Math.round(x * 100)}%`;
 const fmt = (x: number): string => (Math.round(x * 10) / 10).toString();
 const axisCompat = (a: string, b: string): boolean => a === '' || b === '' || a === b;
@@ -25,7 +25,7 @@ const plural = (n: number, one: string, few: string, many: string): string => {
   if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
   return many;
 };
-const median = (xs: number[]): number => {
+export const median = (xs: number[]): number => {
   if (xs.length === 0) return 0;
   const s = [...xs].sort((a, b) => a - b);
   const m = Math.floor(s.length / 2);
@@ -34,9 +34,9 @@ const median = (xs: number[]): number => {
 
 // ── Сыщики ────────────────────────────────────────────────────────────────────
 
-interface Investigator { id: string; name: string; skills: Record<string, number> }
+export interface Investigator { id: string; name: string; skills: Record<string, number> }
 
-function investigatorsOf(records: ContentRecord[]): Investigator[] {
+export function investigatorsOf(records: ContentRecord[]): Investigator[] {
   return records
     .filter((r) => r.status === 'published' && r.data['skills'] && typeof r.data['skills'] === 'object')
     .map((r) => {
@@ -50,7 +50,7 @@ function investigatorsOf(records: ContentRecord[]): Investigator[] {
 }
 
 /** Шанс успеха проверки для каждого сыщика (по возрастанию). */
-function rosterOdds(inv: Investigator[], skill: string, modifier: number) {
+export function rosterOdds(inv: Investigator[], skill: string, modifier: number) {
   return inv
     .map((i) => {
       const base = Number(i.skills[skill] ?? 0);
@@ -106,7 +106,7 @@ function cardWeight(rec: ContentRecord, inv: Investigator[]): CardWeight {
 type Node = Record<string, unknown>;
 
 /** Все узлы-эффекты программы (любая вложенность) с путём для сообщения. */
-function walkNodes(program: unknown, path: string, out: { node: Node; path: string }[] = []): { node: Node; path: string }[] {
+export function walkNodes(program: unknown, path: string, out: { node: Node; path: string }[] = []): { node: Node; path: string }[] {
   if (!Array.isArray(program)) return out;
   program.forEach((n, i) => {
     if (!n || typeof n !== 'object') return;
@@ -239,7 +239,7 @@ function useBulk(type: string) {
 
 // Распределение ростера по размеру пула: одна полоска на пул (шанс от пула и
 // зависит), длина — сколько сыщиков, имена — в подсказке. Медианный пул подсвечен.
-function PoolHistogram({ odds, median: med }: { odds: { name: string; pool: number; p: number }[]; median: number }) {
+export function PoolHistogram({ odds, median: med }: { odds: { name: string; pool: number; p: number }[]; median: number }) {
   const byPool = new Map<number, { p: number; names: string[] }>();
   for (const o of odds) {
     const b = byPool.get(o.pool) ?? { p: o.p, names: [] };
