@@ -103,6 +103,70 @@ function lint(
       if (has && share <= 1 / 3) out.push(`символ «${s.label}» редкий для этого цвета (у ${pct(share)} карт)`);
     }
   }
+  out.push(...textLint(rec, row));
+  return out;
+}
+
+// ── Текст против механики ────────────────────────────────────────────────────
+// В игре у карты с текстом правил машинный список эффектов не показывается —
+// текст единственное, что видит игрок. Поэтому каждое заметное действие механики
+// должно быть в тексте, иначе игрок не поймёт, что случилось («Круг» сдвигал
+// омен, а в тексте об этом не было ни слова). Эвристика по основам слов.
+
+// Глагол механики → основы слов, которые ждём в тексте (RU, EN).
+const TEXT_CUES: Record<string, { label: string; ru: RegExp; en: RegExp }> = {
+  advanceOmen:      { label: 'сдвиг омена',        ru: /омен|знамени/i,               en: /omen/i },
+  resolveReckoning: { label: 'Расплата',           ru: /расплат/i,                    en: /reckoning/i },
+  openGate:         { label: 'врата',              ru: /врат/i,                       en: /gate/i },
+  monsterSurge:     { label: 'всплеск монстров',   ru: /всплеск|монстр/i,             en: /surge|monster/i },
+  placeClue:        { label: 'улики на поле',      ru: /улик/i,                       en: /clue/i },
+  spawnMonster:     { label: 'появление монстра',  ru: /монстр|культист|старш|появл/i, en: /monster|cultist|elder|appear|spawn/i },
+  advanceDoom:      { label: 'Рок',                ru: /(^|[^а-яё])рок/i,             en: /doom/i },
+  loseSanity:       { label: 'потеря рассудка',    ru: /рассуд/i,                     en: /sanity/i },
+  loseHealth:       { label: 'потеря здоровья',    ru: /здоров/i,                     en: /health/i },
+  gainClue:         { label: 'улика сыщику',       ru: /улик/i,                       en: /clue/i },
+  loseClue:         { label: 'потеря улики',       ru: /улик/i,                       en: /clue/i },
+  becomeDelayed:    { label: 'задержка',           ru: /задерж/i,                     en: /delay/i },
+  toughenMonster:   { label: 'усиление монстра',   ru: /стойкост|сильне|усил/i,       en: /toughness|stronger/i },
+  checkModifier:    { label: 'модификатор проверок', ru: /провер/i,                   en: /test|check/i },
+};
+
+// Навык проверки → основы его названия (в игре у observation несколько названий).
+const SKILL_CUES: Record<string, { ru: RegExp; en: RegExp }> = {
+  lore:        { ru: /знани/i,          en: /lore/i },
+  influence:   { ru: /влияни/i,         en: /influence/i },
+  observation: { ru: /наблюд|вниман/i,  en: /observation/i },
+  strength:    { ru: /сил[аыуеой]/i,    en: /strength/i },
+  will:        { ru: /вол[яиеюь]/i,     en: /will/i },
+};
+
+function textLint(rec: ContentRecord, row: MythosRow): string[] {
+  const out: string[] = [];
+  const texts: [string, string, 'ru' | 'en'][] = [];
+  for (const loc of ['ru', 'en'] as const) {
+    const t = String(((rec.i18n[loc] ?? {}) as Node)['text'] ?? '');
+    if (t) texts.push([loc.toUpperCase(), t, loc]);
+  }
+  if (texts.length === 0) {
+    out.push('у карты нет текста правил — в игре вместо него покажется машинный список эффектов');
+    return out;
+  }
+  const verbs = new Set(SECTIONS.flatMap((s) => row.effects[s.key].map((e) => e.verb)));
+  for (const [tag, text, loc] of texts) {
+    for (const verb of verbs) {
+      const cue = TEXT_CUES[verb];
+      if (cue && !cue[loc].test(text)) out.push(`текст ${tag}: в механике ${cue.label} (${verb}), а в тексте об этом нет`);
+    }
+    for (const c of row.checks) {
+      const cue = SKILL_CUES[c.skill];
+      if (cue && !cue[loc].test(text)) out.push(`текст ${tag}: проверка ${SKILL_RU[c.skill] ?? c.skill}, а навык в тексте не назван`);
+    }
+    if (row.isRumor && !(loc === 'ru' ? /слух/i : /rumor/i).test(text)) out.push(`текст ${tag}: карта — Слух, а в тексте это не сказано`);
+    // Обратное направление — только для омена: «Сдвиньте омен» без advanceOmen.
+    if ((loc === 'ru' ? /сдвин[а-яё]* омен/i : /advance the omen/i).test(text) && !verbs.has('advanceOmen')) {
+      out.push(`текст ${tag}: в тексте сдвиг омена, а в механике его нет`);
+    }
+  }
   return out;
 }
 
