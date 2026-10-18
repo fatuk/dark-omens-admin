@@ -201,7 +201,7 @@ export function ListPage() {
           />
         </div>
         <div className="flex-none">
-          <label>Арт</label>
+          <label>Готовность</label>
           <button
             className={notReady ? 'primary' : ''}
             onClick={() => setNotReady((v) => !v)}
