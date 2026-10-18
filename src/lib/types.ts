@@ -73,7 +73,7 @@ export interface ContentListItem {
   status: string;
   tags: string[];
   title: string | null;
-  /** Есть ли картинка в игре. null — у типа нет покарточного арта вовсе. */
-  hasImage: boolean | null;
+  /** Карточка полностью готова после редактуры (ручная отметка автора, data.isReady). */
+  isReady: boolean;
   updatedAt: number;
 }

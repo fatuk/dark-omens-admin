@@ -51,26 +51,26 @@ export function useSaveContent() {
 }
 
 /**
- * Переключить служебный флаг `data.hasImage` прямо из списка.
+ * Переключить служебный флаг `data.isReady` («готова после редактуры») прямо из списка.
  *
  * PUT на бэке ЗАМЕНЯЕТ запись целиком, поэтому сначала тянем карточку и
  * отправляем её обратно с одним изменённым полем — иначе снесли бы механику и
  * тексты. Правку показываем сразу (оптимистично) во всех кэшах списка: 591
  * строка перезапрашивается заметно, а чекбокс должен щёлкать мгновенно.
  */
-export function useSetHasImage() {
+export function useSetReady() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (v: { id: string; value: boolean }) => {
       const rec = await getContent(v.id);
-      return updateContent(v.id, { ...rec, data: { ...rec.data, hasImage: v.value } });
+      return updateContent(v.id, { ...rec, data: { ...rec.data, isReady: v.value } });
     },
     onMutate: async (v) => {
       await qc.cancelQueries({ queryKey: ['content', 'list'] });
       const prev = qc.getQueriesData({ queryKey: ['content', 'list'] });
       qc.setQueriesData<{ items: ContentListItem[] }>({ queryKey: ['content', 'list'] }, (old) =>
         old
-          ? { ...old, items: old.items.map((it) => (it.id === v.id ? { ...it, hasImage: v.value } : it)) }
+          ? { ...old, items: old.items.map((it) => (it.id === v.id ? { ...it, isReady: v.value } : it)) }
           : old,
       );
       return { prev };

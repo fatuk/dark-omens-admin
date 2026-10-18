@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useContentList, useMeta, useDeleteContent, useSetHasImage, type ListFilters } from '@/hooks';
+import { useContentList, useMeta, useDeleteContent, useSetReady, type ListFilters } from '@/hooks';
 import { getContent, createContent } from '@/lib/api';
 import { CONTENT_TYPES, ENCOUNTER_KINDS, kindsFor, type ContentRecord } from '@/lib/types';
 import { fuzzyFilter } from '@/lib/fuzzy';
@@ -17,7 +17,7 @@ function fmtWhen(ms: number): string {
 // места, а запрос — разовое действие, и «список почему-то пустой» после F5 пугает.
 const LS_FILTERS = 'doa_content_filters';
 const LS_SORT = 'doa_content_sort';
-const LS_NO_ART = 'doa_content_noart';
+const LS_NOT_READY = 'doa_content_notready';
 
 function loadFilters(): ListFilters {
   if (typeof window === 'undefined') return {};
@@ -30,10 +30,10 @@ function loadFilters(): ListFilters {
   }
 }
 
-function loadNoArt(): boolean {
+function loadNotReady(): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    return localStorage.getItem(LS_NO_ART) === '1';
+    return localStorage.getItem(LS_NOT_READY) === '1';
   } catch {
     return false;
   }
@@ -55,37 +55,36 @@ export function ListPage() {
 
   const nav = useNavigate();
   const del = useDeleteContent();
-  const setArt = useSetHasImage();
+  const setReady = useSetReady();
 
   // Поиск — клиентский и по нескольким полям сразу: у каталогов названия в
   // списке нет (в i18n.en.name его не бывает), видно id, и искать надо по нему.
   const [query, setQuery] = useState('');
-  // Фильтр по арту — клиентский: hasImage лежит в data карточки, серверных
+  // Фильтр «не готовые» — клиентский: isReady лежит в data карточки, серверных
   // фильтров по полям data нет, а весь список и так приезжает целиком. Живёт в
   // localStorage отдельно от серверных фильтров (в запрос не уходит), как сортировка.
-  const [noArt, setNoArt] = useState(loadNoArt);
+  const [notReady, setNotReady] = useState(loadNotReady);
   useEffect(() => {
     try {
-      localStorage.setItem(LS_NO_ART, noArt ? '1' : '0');
+      localStorage.setItem(LS_NOT_READY, notReady ? '1' : '0');
     } catch { /* localStorage недоступен — не критично */ }
-  }, [noArt]);
+  }, [notReady]);
   const { sort, toggle } = useTableSort(LS_SORT);
 
   const shown = useMemo(() => {
-    // Флага может не быть вовсе (сканер этот тип не трогает) — для «без картинки»
-    // это то же самое, что снятая галка: арта нет.
-    const base = noArt ? items.filter((it) => it.hasImage !== true) : items;
+    // Карточку, которую ещё не отмечали, считаем неготовой (бэк отдаёт false).
+    const base = notReady ? items.filter((it) => !it.isReady) : items;
     const found = fuzzyFilter(base, query, (it) => [it.title, it.id, it.type, ...it.tags]);
     // Сортировка ПОСЛЕ поиска: пока запрос пуст, порядок серверный (свежие
     // сверху); есть запрос и нет сортировки — порядок по релевантности.
     return sortRows(found, sort, (it, key) => {
       if (key === 'title') return it.title || it.id;
       if (key === 'tags') return it.tags.join(' ');
-      // Сортировка по арту: сначала «нет картинки» — именно их и ищут.
-      if (key === 'hasImage') return it.hasImage === true ? 1 : 0;
+      // Сортировка по готовности: сначала неготовые — именно их и ищут.
+      if (key === 'isReady') return it.isReady ? 1 : 0;
       return (it as unknown as Record<string, unknown>)[key];
     });
-  }, [items, query, sort, noArt]);
+  }, [items, query, sort, notReady]);
 
   // Удаление с подтверждением (необратимо). Список обновляется инвалидацией в хуке.
   function deleteItem(id: string, title: string): void {
@@ -204,11 +203,11 @@ export function ListPage() {
         <div className="flex-none">
           <label>Арт</label>
           <button
-            className={noArt ? 'primary' : ''}
-            onClick={() => setNoArt((v) => !v)}
-            title="Показать только карточки без картинки в игре"
+            className={notReady ? 'primary' : ''}
+            onClick={() => setNotReady((v) => !v)}
+            title="Показать только карточки, ещё не отмеченные готовыми"
           >
-            без картинки
+            не готовые
           </button>
         </div>
         <div className="grow">
@@ -239,8 +238,8 @@ export function ListPage() {
             <SortableTh label="Вид" sortKey="kind" sort={sort} onSort={toggle} />
             <SortableTh label="Статус" sortKey="status" sort={sort} onSort={toggle} />
             <SortableTh
-              label="Арт" sortKey="hasImage" sort={sort} onSort={toggle}
-              title="Есть ли картинка в игре. Галку можно ставить руками; make content-images пересчитает её по файлам"
+              label="Готово" sortKey="isReady" sort={sort} onSort={toggle}
+              title="Карточка полностью готова после редактуры — ручная отметка (data.isReady)"
             />
             <SortableTh label="Теги" sortKey="tags" sort={sort} onSort={toggle} />
             <SortableTh label="Обновлено" sortKey="updatedAt" sort={sort} onSort={toggle} />
@@ -261,10 +260,10 @@ export function ListPage() {
               <td>
                 <input
                   type="checkbox"
-                  checked={it.hasImage === true}
-                  disabled={setArt.isPending}
-                  title="Картинка добавлена в игру"
-                  onChange={(e) => setArt.mutate({ id: it.id, value: e.target.checked })}
+                  checked={it.isReady}
+                  disabled={setReady.isPending}
+                  title="Карточка готова после редактуры"
+                  onChange={(e) => setReady.mutate({ id: it.id, value: e.target.checked })}
                 />
               </td>
               <td>{it.tags.map((t) => <span key={t} className="tag">{t}</span>)}</td>

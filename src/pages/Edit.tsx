@@ -177,16 +177,16 @@ export function EditPage() {
     setDataText(JSON.stringify(dataTemplate(rec.type, rec.kind), null, 2));
   }
 
-  // Служебный флаг «есть картинка в игре» — живёт в data.hasImage (как и в списке),
+  // Служебный флаг «карточка готова после редактуры» — живёт в data.isReady (как и в списке),
   // поэтому правим его прямо в JSON механики: уедет обычным «Сохранить».
   // Невалидный JSON в буфере — галку не трогаем (иначе затрём правку).
   const parsedData: Record<string, unknown> | null = (() => {
     try { return JSON.parse(dataText) as Record<string, unknown>; } catch { return null; }
   })();
-  const hasImage = parsedData?.hasImage === true;
-  function setHasImage(v: boolean) {
+  const isReady = parsedData?.isReady === true;
+  function setIsReady(v: boolean) {
     if (!parsedData) return;
-    setDataText(JSON.stringify({ ...parsedData, hasImage: v }, null, 2));
+    setDataText(JSON.stringify({ ...parsedData, isReady: v }, null, 2));
   }
 
   async function save() {
@@ -325,18 +325,18 @@ export function EditPage() {
           </select>
         </div>
         <div>
-          <label>Арт</label>
+          <label>Готовность</label>
           <label
             className="dsl-check"
-            title={parsedData ? 'Есть картинка в игре (служебный флаг data.hasImage)' : 'Механика (data) — невалидный JSON'}
+            title={parsedData ? 'Карточка полностью готова после редактуры (служебный флаг data.isReady)' : 'Механика (data) — невалидный JSON'}
           >
             <input
               type="checkbox"
-              checked={hasImage}
+              checked={isReady}
               disabled={!parsedData}
-              onChange={(e) => setHasImage(e.target.checked)}
+              onChange={(e) => setIsReady(e.target.checked)}
             />
-            {' '}есть картинка
+            {' '}готово
           </label>
         </div>
         {rec.type === 'ancient' && (
