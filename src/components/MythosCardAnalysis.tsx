@@ -37,6 +37,7 @@ const SOLVE_RU: Record<string, string> = {
   encounter: 'встреча на клетке слуха',
   monsterDefeated: 'победить заспауненного монстра',
   toughnessOnCard: 'стойкость монстров на карте',
+  researchClue: 'улики из исследования на клетке слуха → на карту',
 };
 
 const ACT_COLORS = ['1', '2', '3'];

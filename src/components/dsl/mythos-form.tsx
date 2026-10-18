@@ -12,6 +12,7 @@ type Obj = Record<string, unknown>;
 const SOLVE_KINDS: { value: string; label: string }[] = [
   { value: 'gateClose',       label: 'Закрыть врата-портал' },
   { value: 'encounter',       label: 'Встреча на клетке слуха' },
+  { value: 'researchClue',    label: 'Улики из исследования на клетке слуха → на карту' },
   { value: 'monsterDefeated', label: 'Победить заспауненного монстра' },
   { value: 'toughnessOnCard', label: 'Стойкость монстров на карте' },
 ];
@@ -107,6 +108,28 @@ export function MythosForm(
               />
               {' '}Развеять Слух, когда жетоны истекли (solveOnExpire)
             </label>
+            {['encounter', 'researchClue'].includes(String(solve['kind'] ?? 'gateClose')) && (
+              <label className="dsl-field" title="Клетка Слуха (метка на карте); пусто — случайная">
+                клетка Слуха:{' '}
+                <select value={String(rumor['location'] ?? '')}
+                  onChange={(e) => {
+                    const next = { ...rumor };
+                    if (e.target.value) next['location'] = e.target.value;
+                    else delete next['location'];
+                    patchRumor(next);
+                  }}>
+                  <option value="">случайная</option>
+                  {(meta?.locations ?? []).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+              </label>
+            )}
+            {String(solve['kind'] ?? 'gateClose') === 'researchClue' && (
+              <label className="dsl-field" title="Улика, найденная исследованием на клетке Слуха, уходит с сыщика на карту; набрали — Слух развеян">
+                улик на карте:{' '}
+                <input type="number" className="w-12" min={1} value={Number(solve['progress'] ?? 1)}
+                  onChange={(e) => patchRumor({ ...rumor, solve: { ...solve, progress: Math.max(1, Number(e.target.value) || 1) } })} />
+              </label>
+            )}
             {String(solve['kind'] ?? 'gateClose') === 'encounter' && (
               <div className="flex gap-3 items-center flex-wrap">
                 <label className="dsl-field" title="Плата за попытку (списывается при любом исходе); без неё встреча бесплатна">
