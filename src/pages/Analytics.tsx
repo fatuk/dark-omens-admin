@@ -28,20 +28,17 @@ interface Filters {
   season: string;
   ancient: string;
   loc: string;
-  /** Конкретная локация — её собственные карты (тег location:<id>, «Стамбул»).
-   *  NO_LOCATION — только карты без привязки к месту. */
+  /** Конкретная локация — её собственные карты (тег location:<id>, «Стамбул»). Общие
+   *  сюда не подмешиваем: вид встречи (своя клетки / общая) выбирает игрок, это две
+   *  разные колоды. NO_LOCATION — только карты без привязки к месту. */
   location: string;
-  /** С локацией: добавить общие general/research её типа — весь пул, который игра
-   *  подмешивает на этой клетке (relay buildCorpusCards). Врата — не колода места. */
-  withGeneral: boolean;
   world: string;
   tag: string;
   q: string;
 }
 
 const DEFAULT: Filters = {
-  kinds: [], status: '', season: '', ancient: '', loc: '', location: '', withGeneral: false,
-  world: '', tag: '', q: '',
+  kinds: [], status: '', season: '', ancient: '', loc: '', location: '', world: '', tag: '', q: '',
 };
 
 const NO_LOCATION = '__none__';
@@ -113,9 +110,6 @@ function EncounterAnalytics() {
     try { localStorage.setItem(LS_KEY, JSON.stringify(next)); } catch { /* приватный режим */ }
   }
 
-  // Тип выбранной локации (city/wilderness/sea) — общие карты её колоды того же типа.
-  const locType = (meta?.locations ?? []).find((l) => l.id === f.location)?.type ?? '';
-
   const filtered: ContentRecord[] = useMemo(() => {
     const all = data?.records ?? [];
     const base = all.filter((r) => {
@@ -126,13 +120,7 @@ function EncounterAnalytics() {
       if (f.ancient && m.ancient !== f.ancient) return false;
       if (f.loc && m.loc !== f.loc) return false;
       if (f.location === NO_LOCATION && m.location !== '') return false;
-      if (f.location && f.location !== NO_LOCATION && m.location !== f.location) {
-        // Не своя карта: годится только как общая того же типа, и только по галке.
-        if (!f.withGeneral || m.location !== '') return false;
-        if (r.kind !== 'general' && r.kind !== 'research') return false;
-        if (m.loc !== '' && m.loc !== locType) return false;
-        if (m.world !== '') return false;
-      }
+      if (f.location && f.location !== NO_LOCATION && m.location !== f.location) return false;
       if (f.world && m.world !== f.world) return false;
       if (f.tag && !r.tags.some((t) => t.includes(f.tag))) return false;
       return true;
@@ -140,12 +128,7 @@ function EncounterAnalytics() {
     if (!f.q) return base;
     const ru = (r: ContentRecord) => (r.i18n['ru'] ?? r.i18n['en'] ?? {}) as Record<string, unknown>;
     return fuzzyFilter(base, f.q, (r) => [r.id, String(ru(r)['name'] ?? ''), ...r.tags]);
-  }, [data, f, locType]);
-
-  // Колода конкретной локации: сколько в ней привязанных карт, а сколько общих по типу.
-  const pinnedCount = f.location && f.location !== NO_LOCATION
-    ? filtered.filter((r) => splitTags(r.tags).location === f.location).length
-    : -1;
+  }, [data, f]);
 
   const stats = useMemo(() => computeStats(filtered), [filtered]);
 
@@ -213,13 +196,6 @@ function EncounterAnalytics() {
             <option value={NO_LOCATION}>без привязки (общие)</option>
             {locationOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           </select>
-          {f.location && f.location !== NO_LOCATION && (
-            <label className="row" style={{ gap: 6 }}>
-              <input type="checkbox" checked={f.withGeneral}
-                onChange={(e) => update({ withGeneral: e.target.checked })} />
-              + общие ({locType || 'тип?'})
-            </label>
-          )}
           <select value={f.world} onChange={(e) => update({ world: e.target.value })}>
             <option value="">— Иной мир —</option>
             {(meta?.otherWorlds ?? []).map((w) => <option key={w} value={w}>{w}</option>)}
@@ -234,11 +210,6 @@ function EncounterAnalytics() {
         <div className="section-title">Сводка</div>
         <div className="row" style={{ gap: 24, flexWrap: 'wrap' }}>
           <div><b>{stats.encounters}</b> встреч ({Object.entries(stats.byKind).map(([k, n]) => `${k}: ${n}`).join(', ') || '—'})</div>
-          {pinnedCount >= 0 && f.withGeneral && (
-            <div>
-              <b>{pinnedCount}</b> привязано к локации, <b>{filtered.length - pinnedCount}</b> общих ({locType || 'тип?'})
-            </div>
-          )}
           <div><b>{stats.checks}</b> проверок</div>
           <div><b>{stats.withoutCheck}</b> без проверки</div>
           <div><b>{totalVerbs}</b> эффектов</div>
