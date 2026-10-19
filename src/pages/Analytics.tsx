@@ -1,6 +1,6 @@
 // Массовая аналитика: вкладки «Встречи» и «Мифы» (см. MythosAnalytics).
 // Встречи: фильтр по осям (вид / статус / сезон / Древний /
-// тип локации / Иной мир / акт / тег / название) → сводка: сколько проверок и
+// тип локации / конкретная локация / Иной мир / акт / тег / название) → сводка: сколько проверок и
 // каких, распределение модификаторов, какие награды и штрафы и в каких ветках.
 // Внизу — таблица встреч под фильтром с грубой «щедростью/жёсткостью» для ручного
 // разбора. Считается на клиенте из полных записей (/admin/content/bulk).
@@ -28,14 +28,20 @@ interface Filters {
   season: string;
   ancient: string;
   loc: string;
+  /** Конкретная локация — колода, которую игра тянет на этой клетке («Лондон»): карты
+   *  с привязкой location:<id> + общие её типа (loc пуст или совпал), как в relay
+   *  buildCorpusCards. NO_LOCATION — только карты без привязки к месту. */
+  location: string;
   world: string;
   tag: string;
   q: string;
 }
 
 const DEFAULT: Filters = {
-  kinds: [], status: '', season: '', ancient: '', loc: '', world: '', tag: '', q: '',
+  kinds: [], status: '', season: '', ancient: '', loc: '', location: '', world: '', tag: '', q: '',
 };
+
+const NO_LOCATION = '__none__';
 
 /** Ячейка «раз · Σ»: число вхождений; сумма amount/count серым, только если больше числа
  *  карт (у состояний/активов/навыков она равна числу и лишь дублирует его). */
@@ -104,6 +110,9 @@ function EncounterAnalytics() {
     try { localStorage.setItem(LS_KEY, JSON.stringify(next)); } catch { /* приватный режим */ }
   }
 
+  // Тип выбранной локации (city/wilderness/sea) — общие карты её колоды того же типа.
+  const locType = (meta?.locations ?? []).find((l) => l.id === f.location)?.type ?? '';
+
   const filtered: ContentRecord[] = useMemo(() => {
     const all = data?.records ?? [];
     const base = all.filter((r) => {
@@ -113,6 +122,12 @@ function EncounterAnalytics() {
       if (f.season && m.season !== f.season) return false;
       if (f.ancient && m.ancient !== f.ancient) return false;
       if (f.loc && m.loc !== f.loc) return false;
+      if (f.location === NO_LOCATION && m.location !== '') return false;
+      if (f.location && f.location !== NO_LOCATION) {
+        if (m.location !== '' && m.location !== f.location) return false;  // привязана к другой
+        if (m.loc !== '' && m.loc !== locType) return false;  // общая, но другого типа
+        if (r.kind !== 'gate' && m.world !== '') return false;  // не врата — не Иной мир
+      }
       if (f.world && m.world !== f.world) return false;
       if (f.tag && !r.tags.some((t) => t.includes(f.tag))) return false;
       return true;
@@ -120,9 +135,25 @@ function EncounterAnalytics() {
     if (!f.q) return base;
     const ru = (r: ContentRecord) => (r.i18n['ru'] ?? r.i18n['en'] ?? {}) as Record<string, unknown>;
     return fuzzyFilter(base, f.q, (r) => [r.id, String(ru(r)['name'] ?? ''), ...r.tags]);
-  }, [data, f]);
+  }, [data, f, locType]);
+
+  // Колода конкретной локации: сколько в ней привязанных карт, а сколько общих по типу.
+  const pinnedCount = f.location && f.location !== NO_LOCATION
+    ? filtered.filter((r) => splitTags(r.tags).location === f.location).length
+    : -1;
 
   const stats = useMemo(() => computeStats(filtered), [filtered]);
+
+  // Локации для фильтра: из меты (имя) + те, что встречаются в тегах, но меты не знают.
+  const locationOptions = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const l of meta?.locations ?? []) byId.set(l.id, l.name);
+    for (const r of data?.records ?? []) {
+      const id = splitTags(r.tags).location;
+      if (id && !byId.has(id)) byId.set(id, `${id} (?)`);
+    }
+    return [...byId.entries()].sort((a, b) => a[1].localeCompare(b[1], 'ru'));
+  }, [meta, data]);
 
   const rows = useMemo(() => sortRows(stats.rows, sort, (r, key) => {
     if (key === 'checks') return r.checks.map((c) => `${c.skill}${c.modifier}`).join(' ');
@@ -172,6 +203,11 @@ function EncounterAnalytics() {
             <option value="">— тип локации —</option>
             {(meta?.locationTypes ?? []).map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
+          <select value={f.location} onChange={(e) => update({ location: e.target.value })}>
+            <option value="">— локация —</option>
+            <option value={NO_LOCATION}>без привязки (общие)</option>
+            {locationOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+          </select>
           <select value={f.world} onChange={(e) => update({ world: e.target.value })}>
             <option value="">— Иной мир —</option>
             {(meta?.otherWorlds ?? []).map((w) => <option key={w} value={w}>{w}</option>)}
@@ -186,6 +222,11 @@ function EncounterAnalytics() {
         <div className="section-title">Сводка</div>
         <div className="row" style={{ gap: 24, flexWrap: 'wrap' }}>
           <div><b>{stats.encounters}</b> встреч ({Object.entries(stats.byKind).map(([k, n]) => `${k}: ${n}`).join(', ') || '—'})</div>
+          {pinnedCount >= 0 && (
+            <div>
+              <b>{pinnedCount}</b> привязано к локации, <b>{filtered.length - pinnedCount}</b> общих ({locType || 'тип?'})
+            </div>
+          )}
           <div><b>{stats.checks}</b> проверок</div>
           <div><b>{stats.withoutCheck}</b> без проверки</div>
           <div><b>{totalVerbs}</b> эффектов</div>
