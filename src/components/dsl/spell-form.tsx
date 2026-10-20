@@ -57,6 +57,12 @@ function backTextKey(d: Obj, n: number): string {
   return `RECK_${spellSlug(d).toUpperCase()}_B${n}`;
 }
 
+/** Ключ текста яруса: <ключ оборота>_T<n>. У каждого яруса в EH свой флейвор;
+ *  его показывает окно расплаты, нет — текст оборота целиком. */
+function tierTextKey(d: Obj, b: Obj, backNo: number, n: number): string {
+  return `${String(b['text'] ?? '') || backTextKey(d, backNo)}_T${n}`;
+}
+
 export function SpellForm(
   { value, onChange, meta }: { value: string; onChange: (json: string) => void; meta?: Meta },
 ): JSX.Element {
@@ -211,8 +217,9 @@ export function SpellForm(
                 </div>
                 <button className="danger" onClick={() => patchBack(i, null)}>Удалить оборот</button>
               </div>
-              {/* Оборот без ключа текста (заведён раньше) — поля слева у него нет. */}
-              {!String(b['text'] ?? '') && (
+              {/* Оборот без ключа текста (заведён раньше) — поля слева у него нет. Если
+                  тексты есть у ярусов, общий текст оборота не нужен. */}
+              {!String(b['text'] ?? '') && !tiers.some((t) => String(t['text'] ?? '')) && (
                 <button onClick={() => patchBack(i, { ...b, text: backTextKey(d, nextBackNo(backs)) })}>
                   + текст оборота
                 </button>
@@ -221,6 +228,9 @@ export function SpellForm(
                 <div key={ti} className="spell-tier">
                   <div className="spell-tier-title">
                     Ярус {ti + 1}{String(t['on'] ?? '') ? ` · успехов: ${String(t['on'])}` : ''}
+                    {String(t['text'] ?? '') && (
+                      <span className="spell-back-key"> · текст: {String(t['text'])}</span>
+                    )}
                   </div>
                   <div className="row">
                     <div>
@@ -232,6 +242,11 @@ export function SpellForm(
                         onChange={(e) => patchTier(ti, { ...t, on: e.target.value })}
                       />
                     </div>
+                    {!String(t['text'] ?? '') && (
+                      <button onClick={() => patchTier(ti, { ...t, text: tierTextKey(d, b, i + 1, ti + 1) })}>
+                        + текст яруса
+                      </button>
+                    )}
                     <button onClick={() => patchTier(ti, null)}>Удалить ярус</button>
                   </div>
                   <EffectList
@@ -241,7 +256,15 @@ export function SpellForm(
                   />
                 </div>
               ))}
-              <button onClick={() => patchBack(i, { ...b, tiers: [...tiers, { on: '', effect: [] }] })}>
+              <button
+                onClick={() => {
+                  const t: Obj = { on: '', effect: [] };
+                  if (String(b['text'] ?? '') || tiers.some((x) => String(x['text'] ?? ''))) {
+                    t['text'] = tierTextKey(d, b, i + 1, tiers.length + 1);
+                  }
+                  patchBack(i, { ...b, tiers: [...tiers, t] });
+                }}
+              >
                 + ярус
               </button>
             </div>
