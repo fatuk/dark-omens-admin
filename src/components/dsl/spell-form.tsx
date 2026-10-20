@@ -31,6 +31,32 @@ const TRIGGERS = [
 
 const TRAITS = ['magical', 'spell', 'ritual', 'blessing', 'curse'];
 
+/** Слаг заклинания для ключей оборотов: id карточки, иначе из ключа названия
+ *  (SPELL_FEED_THE_MIND_NAME → feed_the_mind). */
+function spellSlug(d: Obj): string {
+  const id = String(d['id'] ?? '');
+  if (id) return id;
+  const name = String(d['name'] ?? '');
+  return name.replace(/^SPELL_/, '').replace(/_NAME$/, '').toLowerCase() || 'spell';
+}
+
+/** Следующий свободный номер оборота: по хвосту _B<n> у ключей текста и _b<n> у id. */
+function nextBackNo(backs: Obj[]): number {
+  let max = 0;
+  for (const b of backs) {
+    for (const v of [String(b['text'] ?? ''), String(b['id'] ?? '')]) {
+      const m = /_b(\d+)$/i.exec(v);
+      if (m) max = Math.max(max, Number(m[1]));
+    }
+  }
+  return Math.max(max, backs.length) + 1;
+}
+
+/** Ключ текста оборота: RECK_<SLUG>_B<n> — по нему панель «Тексты» слева заводит поле. */
+function backTextKey(d: Obj, n: number): string {
+  return `RECK_${spellSlug(d).toUpperCase()}_B${n}`;
+}
+
 export function SpellForm(
   { value, onChange, meta }: { value: string; onChange: (json: string) => void; meta?: Meta },
 ): JSX.Element {
@@ -166,7 +192,9 @@ export function SpellForm(
             patchBack(i, { ...b, tiers: list });
           };
           return (
-            <div key={String(b['id'] ?? i)} className="dsl-subform">
+            // Ключ — позиция, а не id: при вводе id блок иначе пересоздавался
+            // на каждую букву и инпут терял фокус.
+            <div key={i} className="dsl-subform">
               <div className="row">
                 <div>
                   <label>Идентификатор оборота</label>
@@ -177,6 +205,12 @@ export function SpellForm(
                 </div>
                 <button className="danger" onClick={() => patchBack(i, null)}>Удалить оборот</button>
               </div>
+              {/* Оборот без ключа текста (заведён раньше) — поля слева у него нет. */}
+              {!String(b['text'] ?? '') && (
+                <button onClick={() => patchBack(i, { ...b, text: backTextKey(d, nextBackNo(backs)) })}>
+                  + текст оборота
+                </button>
+              )}
               {tiers.map((t, ti) => (
                 <div key={ti} style={{ marginTop: 8 }}>
                   <div className="row">
@@ -204,7 +238,13 @@ export function SpellForm(
             </div>
           );
         })}
-        <button onClick={() => patchBacks([...backs, { id: '', text: '', tiers: [] }])}>
+        {/* Новый оборот сразу с id и ключом текста — поле для текста появится слева. */}
+        <button
+          onClick={() => {
+            const n = nextBackNo(backs);
+            patchBacks([...backs, { id: `${spellSlug(d)}_b${n}`, text: backTextKey(d, n), tiers: [] }]);
+          }}
+        >
           + оборот
         </button>
       </div>

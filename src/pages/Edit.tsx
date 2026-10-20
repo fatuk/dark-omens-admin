@@ -220,7 +220,7 @@ export function EditPage() {
     try {
       const { fields } = await draftMut.mutateAsync({
         type: rec.type, kind: rec.kind, tags: rec.tags,
-        fields: prosePaths(rec.type, rec.kind, rec.data), language: locale, mechanics,
+        fields: prosePaths(rec.type, rec.kind, mechanics ?? rec.data), language: locale, mechanics,
         brief: brief.trim() || undefined,
       });
       setRec((r) => ({ ...r, i18n: { ...r.i18n, [locale]: setMany(r.i18n[locale] ?? {}, fields) } }));
@@ -438,7 +438,9 @@ export function EditPage() {
         />
       </div>
 
-      {proseSchema(rec.type, rec.kind, rec.data).map((group, gi) => (
+      {/* Поля — по ЖИВЫМ данным механики (dataText): новый оборот заклинания и др. ключи
+          видны сразу, а не после «Сохранить». */}
+      {proseSchema(rec.type, rec.kind, parsedData ?? rec.data).map((group, gi) => (
         <div key={gi} className="prose-group">
           {group.title && <div className="prose-group-title">{group.title}</div>}
           {group.fields.map((f) => (
