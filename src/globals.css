@@ -117,6 +117,14 @@
   .rf-node button { @apply text-[11px] px-1.5 py-1; }
   .rf-note { @apply text-muted text-xs px-3 py-2 my-2 rounded-md border border-line bg-white/[.015]; }
 
+  /* Обороты заклинания: каждый — своя карточка, ярусы внутри — с отбивкой слева. */
+  .spell-back { @apply border border-line rounded-lg px-3.5 pt-2.5 pb-3 my-3 bg-white/[.02]; }
+  .spell-back-head { @apply flex items-center justify-between gap-3 mb-2; }
+  .spell-back-title { @apply text-gold text-xs font-bold tracking-[.06em] uppercase; }
+  .spell-back-key { @apply text-muted text-[11px] font-mono; }
+  .spell-tier { @apply border-l-2 border-[#3a2f52] pl-3 py-1.5 my-2.5; }
+  .spell-tier-title { @apply text-muted text-[11px] font-semibold uppercase tracking-[.05em] mb-1; }
+
   /* Селект с поиском (combobox); выпадашка — в портале (position: fixed) */
   .cbx { @apply relative; }
   .cbx-input { @apply w-full; }

@@ -194,7 +194,13 @@ export function SpellForm(
           return (
             // Ключ — позиция, а не id: при вводе id блок иначе пересоздавался
             // на каждую букву и инпут терял фокус.
-            <div key={i} className="dsl-subform">
+            <div key={i} className="spell-back">
+              <div className="spell-back-head">
+                <span className="spell-back-title">Оборот {i + 1}</span>
+                {String(b['text'] ?? '') && (
+                  <span className="spell-back-key">текст: {String(b['text'])}</span>
+                )}
+              </div>
               <div className="row">
                 <div>
                   <label>Идентификатор оборота</label>
@@ -212,7 +218,10 @@ export function SpellForm(
                 </button>
               )}
               {tiers.map((t, ti) => (
-                <div key={ti} style={{ marginTop: 8 }}>
+                <div key={ti} className="spell-tier">
+                  <div className="spell-tier-title">
+                    Ярус {ti + 1}{String(t['on'] ?? '') ? ` · успехов: ${String(t['on'])}` : ''}
+                  </div>
                   <div className="row">
                     <div>
                       <label>Успехов</label>
