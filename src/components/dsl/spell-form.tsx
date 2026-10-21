@@ -29,8 +29,6 @@ const TRIGGERS = [
   { value: 'onRest', label: 'На отдыхе' },
 ];
 
-const TRAITS = ['magical', 'spell', 'ritual', 'blessing', 'curse'];
-
 /** Слаг заклинания для ключей оборотов: id карточки, иначе из ключа названия
  *  (SPELL_FEED_THE_MIND_NAME → feed_the_mind). */
 function spellSlug(d: Obj): string {
@@ -85,7 +83,6 @@ export function SpellForm(
     patch({ ...d, front: next });
   };
 
-  const traits = Array.isArray(d['traits']) ? (d['traits'] as string[]) : [];
   const listProps = {
     verbs: [...(meta?.dsl?.actionVerbs ?? [])].sort(),
     verbDefs: meta?.dsl?.verbs,
@@ -123,20 +120,6 @@ export function SpellForm(
               {SUBTYPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </div>
-        </div>
-        <div className="row" style={{ gap: 4, flexWrap: 'wrap', marginTop: 8 }}>
-          {TRAITS.map((t) => (
-            <button
-              key={t}
-              className={traits.includes(t) ? 'primary' : ''}
-              onClick={() => patch({
-                ...d,
-                traits: traits.includes(t) ? traits.filter((x) => x !== t) : [...traits, t],
-              })}
-            >
-              {t}
-            </button>
-          ))}
         </div>
       </div>
 
