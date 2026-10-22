@@ -91,7 +91,7 @@ const ANCIENT_PROSE: ProseGroup[] = [{
 
 /** Раскладка полей прозы под тип/вид. */
 /** Типы-каталоги: тексты лежат НЕ по фиксированным полям, а по ключам перевода. */
-const CATALOG_TYPES = new Set(['investigator', 'asset', 'spell', 'monster', 'artifact', 'location']);
+const CATALOG_TYPES = new Set(['investigator', 'asset', 'spell', 'monster', 'artifact', 'location', 'condition']);
 
 /** Ключ перевода в данных карточки: ASSET_VAMPIRIC_TALISMAN_NAME. */
 const KEY_RE = /^[A-Z][A-Z0-9_]{3,}$/;

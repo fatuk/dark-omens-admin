@@ -17,6 +17,7 @@ import { AssetForm } from '@/components/dsl/asset-form';
 import { InvestigatorForm } from '@/components/dsl/investigator-form';
 import { MonsterForm } from '@/components/dsl/monster-form';
 import { SpellForm } from '@/components/dsl/spell-form';
+import { ConditionForm } from '@/components/dsl/condition-form';
 import { EncounterFlow } from '@/components/dsl/encounter-flow';
 import { MysteryFlow } from '@/components/dsl/mystery-flow';
 import { MythosForm } from '@/components/dsl/mythos-form';
@@ -518,6 +519,8 @@ export function EditPage() {
                       ? <MonsterForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
                     : rec.type === 'spell'
                       ? <SpellForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
+                    : rec.type === 'condition'
+                      ? <ConditionForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
                     : rec.type === 'investigator'
                       ? <InvestigatorForm value={dataText} onChange={setDataText} meta={meta ?? undefined} />
                     : rec.type === 'artifact'

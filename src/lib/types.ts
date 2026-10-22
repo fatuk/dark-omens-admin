@@ -21,8 +21,9 @@ export const LOCALES: Locale[] = ['en', 'ru'];
 // data/*.json подключим вместе с движковой колодой — генерировать файл,
 // который никто не читает, значит заводить ту самую мёртвую лексику.
 // По алфавиту — так же рисуются селекторы типа в списке и редакторе.
+// `condition` — состояния (лицо + обороты-исходы); экспорт → data/conditions.json.
 export const CONTENT_TYPES = [
-  'ancient', 'artifact', 'asset', 'encounter', 'investigator',
+  'ancient', 'artifact', 'asset', 'condition', 'encounter', 'investigator',
   'location', 'monster', 'mystery', 'mythos', 'spell',
 ] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];

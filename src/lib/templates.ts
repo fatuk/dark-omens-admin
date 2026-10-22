@@ -106,6 +106,13 @@ export function dataTemplate(type: string, kind: string): Record<string, unknown
   if (type === 'location') {
     return { id: '', nameKey: '', realKey: '', descKey: '' };
   }
+  // Состояние: вид, сезон, лицо (действие/Расплата) и обороты-исходы.
+  if (type === 'condition') {
+    return {
+      id: '', name: '', kind: 'injury', season: '', front: '', reckoning: '',
+      action: [], onReckoning: [{ do: 'flipCard' }], backs: [],
+    };
+  }
   if (type === 'spell') {
     return { name: '', subtype: 'ritual', season: '', traits: ['magical', 'spell'], front: {}, backs: [] };
   }
