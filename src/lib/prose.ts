@@ -79,13 +79,22 @@ const MYTHOS_PROSE: ProseGroup[] = [{
   ],
 }];
 
-// Древний: идентичность (как в config/ancients.json — name/epithet/description/awakening).
+// Древний: идентичность (как в config/ancients.json — name/epithet/description) и
+// концовки партии. Концовки читает модалка финала в игре (GameOutcome) по причине:
+// пустое поле → «Пробуждение» → общий текст игры.
 const ANCIENT_PROSE: ProseGroup[] = [{
   fields: [
     { path: 'name',        label: 'Имя Древнего',  multiline: false },
     { path: 'epithet',     label: 'Эпитет',        multiline: false },
     { path: 'description', label: 'Описание',      multiline: true },
-    { path: 'awakening',   label: 'Пробуждение',   multiline: true },
+  ],
+}, {
+  title: 'Концовки партии',
+  fields: [
+    { path: 'victory',     label: 'Победа — все Тайны раскрыты',               multiline: true },
+    { path: 'awakening',   label: 'Пробуждение — Рок дошёл до конца',          multiline: true },
+    { path: 'timeUp',      label: 'Время вышло — колода Мифов исчерпана',      multiline: true },
+    { path: 'allFallen',   label: 'Сыщики пали — все погибли',                 multiline: true },
   ],
 }];
 
