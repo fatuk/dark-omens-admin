@@ -65,6 +65,8 @@ export interface ContentRecord {
   i18n: Partial<Record<Locale, Record<string, unknown>>>;
   createdAt?: number;
   updatedAt?: number;
+  /** Ответ сохранения: предупреждения контента (запись сохранена), напр. тихие проверки. */
+  warnings?: string[];
 }
 
 export interface ContentListItem {

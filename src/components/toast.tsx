@@ -1,9 +1,14 @@
 // Лёгкие тосты: ToastProvider (контекст) + useToast(). Автоскрытие, клик — закрыть.
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
-type Kind = 'success' | 'error';
+type Kind = 'success' | 'error' | 'warning';
 interface Toast { id: number; kind: Kind; text: string }
-interface ToastApi { success: (t: string) => void; error: (t: string) => void }
+interface ToastApi {
+  success: (t: string) => void;
+  error: (t: string) => void;
+  /** Не ошибка, но стоит поправить (контент сохранён). Висит дольше. */
+  warning: (t: string) => void;
+}
 
 const Ctx = createContext<ToastApi | null>(null);
 
@@ -22,11 +27,12 @@ export function ToastProvider({ children }: { children: ReactNode }): JSX.Elemen
     seq += 1;
     const id = seq;
     setItems((xs) => [...xs, { id, kind, text }]);
-    window.setTimeout(() => remove(id), kind === 'error' ? 5000 : 2500);
+    window.setTimeout(() => remove(id), kind === 'warning' ? 9000 : kind === 'error' ? 5000 : 2500);
   }, [remove]);
   const api = useMemo<ToastApi>(() => ({
     success: (t) => push('success', t),
     error: (t) => push('error', t),
+    warning: (t) => push('warning', t),
   }), [push]);
 
   return (
@@ -36,7 +42,7 @@ export function ToastProvider({ children }: { children: ReactNode }): JSX.Elemen
         {items.map((t) => (
           <div
             key={t.id}
-            className={`toast ${t.kind === 'error' ? 'err' : 'ok'}`}
+            className={`toast ${t.kind === 'error' ? 'err' : t.kind === 'warning' ? 'warn' : 'ok'}`}
             onClick={() => remove(t.id)}
             role="status"
           >

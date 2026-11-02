@@ -162,6 +162,7 @@
   }
   .toast.err { @apply bg-[#2a1410] border-[#5a2a1a] text-[#e0a080]; }
   .toast.ok { @apply bg-[#142a18] border-[#2e5a3a] text-[#9ad8a8]; }
+  .toast.warn { @apply bg-[#2a2410] border-[#5a4a1a] text-[#e0c880] whitespace-pre-line; }
 
   /* Конструкторы-формы (Тайна/Мифы/Древний) — заполняют панель механики и скроллятся */
   .dsl-form { @apply flex-1 min-h-0 overflow-auto pr-1; }

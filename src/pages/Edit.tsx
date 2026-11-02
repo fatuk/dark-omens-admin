@@ -211,6 +211,8 @@ export function EditPage() {
         takeSnapshot(rec, dataText);
       }
       toast.success('Сохранено');
+      // Сохранено, но игра разрешит часть проверок без видимого броска (silent-tests).
+      if (saved.warnings?.length) toast.warning(saved.warnings.join('\n'));
     } catch (e) { toast.error((e as Error).message); }
   }
 
